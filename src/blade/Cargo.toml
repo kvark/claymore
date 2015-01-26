@@ -1,0 +1,17 @@
+[package]
+
+name = "blade"
+version = "0.1.0"
+authors = [
+"Dzmitry Malyshau <kvarkus@gmail.com>",
+]
+
+[lib]
+name = "blade"
+path = "lib.rs"
+
+[dependencies.cgmath]
+git = "https://github.com/bjz/cgmath-rs"
+
+[dependencies.gfx]
+git = "https://github.com/gfx-rs/gfx-rs"

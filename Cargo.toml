@@ -1,0 +1,14 @@
+[package]
+
+name = "claymore"
+version = "0.1.0"
+authors = [
+"Dzmitry Malyshau <kvarkus@gmail.com>",
+]
+
+[[bin]]
+name = "claymore"
+path = "src/main.rs"
+
+[dependencies.blade]
+path = "src/blade/"
