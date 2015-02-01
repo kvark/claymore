@@ -21,9 +21,9 @@ struct Params {
     color: [f32; 4],
 }
 
-pub struct Entity<S> {
+pub struct Entity<S, P: gfx::shade::ShaderParam> {
     name: String,
-    batch: gfx::batch::RefBatch<Params>,
+    batch: gfx::batch::RefBatch<P>,
     node: Id<Node<S>>,
     skeleton: Option<Id<Skeleton<S>>>,
 }
@@ -35,7 +35,7 @@ pub struct Camera<S> {
 
 pub struct Scene<S> {
     world: space::World<S, Transform<S>>,
-    entities: Vec<Entity<S>>,
+    entities: Vec<Entity<S, Params>>,
     camera: Camera<S>,
 }
 
@@ -46,6 +46,9 @@ impl<S> Scene<S> {
 }
 
 pub fn load_json(path: &str) -> Scene<f32> {
+    use load;
+    //TODO: error processing
+    let raw = load::json(format!("{}.json", path).as_slice()).unwrap();
     Scene {
         world: space::World::new(),
         entities: Vec::new(),

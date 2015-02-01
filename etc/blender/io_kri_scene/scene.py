@@ -39,7 +39,7 @@ def cook_mat(mat,log):
 		'name'		: mat.name,
 		'shader'	: kind,
 		'data'		: {
-			'Ambient'		: ('scalar',	mat.ambient ),
+			'Ambient'		: ('scalar',	(mat.ambient,) ),
 			'DiffuseColor'	: ('color',		list(mat.diffuse_color) ),
 			'DiffuseParams'	: ('vector',	diff_params ),
 			'SpecularColor'	: ('color',		list(mat.specular_color) ),

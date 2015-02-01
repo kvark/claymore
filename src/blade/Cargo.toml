@@ -19,3 +19,6 @@ git = "https://github.com/gfx-rs/gfx-rs"
 [dependencies.gfx_macros]
 git = "https://github.com/gfx-rs/gfx-rs"
 plugin = true
+
+[dependencies]
+rustc-serialize = "*"

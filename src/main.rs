@@ -4,5 +4,5 @@
 extern crate blade;
 
 fn main() {
-    let _scene = blade::scene::load_json("../data/test");
+    let _scene = blade::scene::load_json("data/test");
 }
