@@ -35,7 +35,14 @@ pub struct World<S, T> {
 }
 
 impl<S: BaseNum, T: Transform3<S> + Clone> World<S, T> {
-    fn update(&mut self) {
+    pub fn new() -> World<S, T> {
+        World {
+            nodes: Vec::new(),
+            skeletons: Vec::new(),
+        }
+    }
+
+    pub fn update(&mut self) {
         for i in 0.. self.nodes.len() {
             let (left, right) = self.nodes.split_at_mut(i);
             let n = &mut right[0];
