@@ -1,6 +1,7 @@
 use cgmath::{BaseNum, Transform, Transform3};
 use Id;
 
+#[derive(Copy)]
 pub enum Parent<T> {
     None,
     Domestic(Id<Node<T>>),
@@ -40,6 +41,24 @@ impl<S: BaseNum, T: Transform3<S> + Clone> World<S, T> {
             nodes: Vec::new(),
             skeletons: Vec::new(),
         }
+    }
+
+    pub fn find_node(&self, name: &str) -> Option<Id<Node<T>>> {
+        self.nodes.iter().position(|n| n.name == name)
+                         .map(|i| Id(i))
+    }
+
+    pub fn add_node(&mut self, name: String, parent: Parent<T>, local: T)
+            -> Id<Node<T>> {
+        //TODO: check that parent is valid
+        let nid = Id(self.nodes.len());
+        self.nodes.push(Node {
+            name: name,
+            parent: parent,
+            local: local,
+            world: Transform::identity(),
+        });
+        nid
     }
 
     pub fn update(&mut self) {

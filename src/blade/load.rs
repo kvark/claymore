@@ -1,80 +1,80 @@
-use rustc_serialize::{json, Decodable};
+use rustc_serialize::json;
 use std::collections::HashMap;
 use std::old_io as io;
 
-type Scalar = f32;
+pub type Scalar = f32;
 
 #[derive(RustcDecodable)]
-struct Scene {
-    global: Global,
-    nodes: Vec<Node>,
-    materials: Vec<Material>,
-    entities: Vec<Entity>,
-    cameras: Vec<Camera>,
-    lights: Vec<Light>,
+pub struct Scene {
+    pub global: Global,
+    pub nodes: Vec<Node>,
+    pub materials: Vec<Material>,
+    pub entities: Vec<Entity>,
+    pub cameras: Vec<Camera>,
+    pub lights: Vec<Light>,
 }
 
 #[derive(RustcDecodable)]
-struct Global {
-    gravity: (f32, f32, f32),
+pub struct Global {
+    pub gravity: (f32, f32, f32),
 }
 
 #[derive(RustcDecodable)]
-struct Node {
-    name: String,
-    space: Space<Scalar>,
-    children: Vec<Node>,
-    actions: Vec<Action>,
+pub struct Node {
+    pub name: String,
+    pub space: Space<Scalar>,
+    pub children: Vec<Node>,
+    pub actions: Vec<Action>,
 }
 
 #[derive(RustcDecodable)]
-struct Space<S> {
-    pos: (S, S, S),
-    rot: (S, S, S, S),
-    scale: S,
+pub struct Space<S> {
+    pub pos: (S, S, S),
+    pub rot: (S, S, S, S),
+    pub scale: S,
 }
 
 #[derive(RustcDecodable)]
-struct Entity {
-    mesh: String,
-    range: (u32, u32),
-    armature: String,
-    material: String,
-    actions: Vec<Action>,
+pub struct Entity {
+    pub mesh: String,
+    pub range: (u32, u32),
+    pub armature: String,
+    pub material: String,
+    pub actions: Vec<Action>,
 }
 
 #[derive(RustcDecodable)]
-struct Light {
-    name: String,
-    kind: String,
-    color: (f32, f32, f32),
-    energy: f32,
-    distance: f32,
-    attenuation: (f32, f32),
-    spherical: bool,
-    parameters: Vec<f32>,
-    actions: Vec<Action>,
+pub struct Light {
+    pub name: String,
+    pub kind: String,
+    pub color: (f32, f32, f32),
+    pub energy: f32,
+    pub distance: f32,
+    pub attenuation: (f32, f32),
+    pub spherical: bool,
+    pub parameters: Vec<f32>,
+    pub actions: Vec<Action>,
 }
 
 #[derive(RustcDecodable)]
-struct Camera {
-    name: String,
-    fov_y: f32,
-    range: (f32, f32),
-    actions: Vec<Action>,
+pub struct Camera {
+    pub name: String,
+    pub angle: (f32, f32),
+    pub range: (f32, f32),
+    pub actions: Vec<Action>,
 }
 
 #[derive(RustcDecodable)]
-struct Material {
-    name: String,
-    shader: String,
-    data: HashMap<String, Data>,
-    textures: Vec<Texture>,
+pub struct Material {
+    pub name: String,
+    pub shader: String,
+    pub data: HashMap<String, Data>,
+    pub textures: Vec<Texture>,
 }
 
-type Data = (String, Vec<f32>);
-type Texture = ();  //TODO
-type Action = ();   //TODO
+pub type Data = (String, Vec<f32>);
+pub type Texture = ();  //TODO
+pub type Action = ();   //TODO
 
 #[derive(Debug)]
 pub enum Error {

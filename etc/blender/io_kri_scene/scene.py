@@ -71,7 +71,7 @@ def cook_node(ob,log):
 def cook_camera(cam,log):
 	return {	#todo: ortho
 		'name'	: cam.name,
-		'fov_y'	: cam.angle,	#todo: make sure it's vfov
+		'angle'	: [cam.angle_x, cam.angle_y],
 		'range'	: [cam.clip_start,cam.clip_end],
 		'actions' : [],
 	}
