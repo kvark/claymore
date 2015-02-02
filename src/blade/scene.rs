@@ -40,6 +40,7 @@ pub struct Scene<S, P: cgmath::Projection<S>> {
     pub world: space::World<S, Transform<S>>,
     pub entities: Vec<Entity<S, Params>>,
     pub camera: Camera<S, P>,
+    batch_context: gfx::batch::Context,
 }
 
 impl<S, P: cgmath::Projection<S>> Scene<S, P> {
@@ -57,7 +58,8 @@ pub enum LoadJsonError {
 
 pub type SceneJson = Scene<f32, cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>>;
 
-pub fn load_json(path: &str) -> Result<SceneJson, LoadJsonError> {
+pub fn load_json<D: gfx::Device>(path: &str, device: &mut D)
+        -> Result<SceneJson, LoadJsonError> {
     fn read_space<S: cgmath::BaseFloat>(raw: &load::Space<S>) -> Transform<S> {
         cgmath::Decomposed {
             scale: raw.scale,
@@ -115,9 +117,13 @@ pub fn load_json(path: &str) -> Result<SceneJson, LoadJsonError> {
             projection: proj,
         }
     };
+    // read entities
+    let mut batch_context = gfx::batch::Context::new();
+    // done
     Ok(Scene {
         world: world,
         entities: Vec::new(),
         camera: camera,
+        batch_context: batch_context,
     })
 }
