@@ -36,6 +36,7 @@ pub struct Space<S> {
 
 #[derive(RustcDecodable)]
 pub struct Entity {
+    pub node: String,
     pub mesh: String,
     pub range: (u32, u32),
     pub armature: String,
@@ -46,6 +47,7 @@ pub struct Entity {
 #[derive(RustcDecodable)]
 pub struct Light {
     pub name: String,
+    pub node: String,
     pub kind: String,
     pub color: (f32, f32, f32),
     pub energy: f32,
@@ -59,6 +61,7 @@ pub struct Light {
 #[derive(RustcDecodable)]
 pub struct Camera {
     pub name: String,
+    pub node: String,
     pub angle: (f32, f32),
     pub range: (f32, f32),
     pub actions: Vec<Action>,

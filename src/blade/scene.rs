@@ -17,29 +17,29 @@ pub type Skeleton<S> = space::Skeleton<Transform<S>>;
 #[derive(Copy)]
 #[shader_param]
 pub struct Params {
-    #[name = "u_mvp"]
+    #[name = "u_Transform"]
     pub mvp: [[f32; 4]; 4],
-    #[name = "u_color"]
+    #[name = "u_Color"]
     pub color: [f32; 4],
 }
 
 pub struct Entity<S, P: gfx::shade::ShaderParam> {
-    //name: String,
+    pub name: String,
     pub batch: gfx::batch::RefBatch<P>,
     pub node: Id<Node<S>>,
     pub skeleton: Option<Id<Skeleton<S>>>,
 }
 
 pub struct Camera<S, P: cgmath::Projection<S>> {
-    //name: String,
+    pub name: String,
     pub node: Id<Node<S>>,
     pub projection: P,
 }
 
 pub struct Scene<S, P: cgmath::Projection<S>> {
-    pub world: space::World<S, Transform<S>>,
-    pub entities: Vec<Entity<S, Params>>,
-    pub camera: Camera<S, P>,
+    world: space::World<S, Transform<S>>,
+    entities: Vec<Entity<S, Params>>,
+    camera: Camera<S, P>,
     batch_context: gfx::batch::Context,
 }
 
@@ -49,17 +49,61 @@ impl<S, P: cgmath::Projection<S>> Scene<S, P> {
     }
 }
 
+static VERTEX_SRC: gfx::ShaderSource<'static> = shaders! {
+    glsl_150: b"#version 150 core
+
+    in vec3 a_Pos;
+    in vec2 a_TexCoord;
+    out vec2 v_TexCoord;
+
+    uniform mat4 u_Transform;
+
+    void main() {
+        v_TexCoord = a_TexCoord;
+        gl_Position = u_Transform * vec4(a_Pos, 1.0);
+    }
+    "
+};
+
+static FRAGMENT_SRC: gfx::ShaderSource<'static> = shaders! {
+    glsl_150: b"#version 150 core
+
+    in vec2 v_TexCoord;
+    out vec4 o_Color;
+
+    uniform vec4 color;
+
+    void main() {
+        o_Color = color;
+    }
+    "
+};
+
+#[derive(Debug)]
+pub enum LoadMeshError {
+    Path,
+}
+
+pub fn load_k3mesh<D: gfx::Device>(path: &str, device: &mut D)
+        -> Result<gfx::Mesh, LoadMeshError> {
+    Err(LoadMeshError::Path)
+}
+
 #[derive(Debug)]
 pub enum LoadJsonError {
     Parse(load::Error),
     NoCamera,
     MissingNode(String),
+    Program(gfx::ProgramError),
+    Mesh(String, LoadMeshError),
+    Batch(String, gfx::batch::BatchError),
 }
 
 pub type SceneJson = Scene<f32, cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>>;
 
 pub fn load_json<D: gfx::Device>(path: &str, device: &mut D)
         -> Result<SceneJson, LoadJsonError> {
+    use gfx::DeviceHelper;
     fn read_space<S: cgmath::BaseFloat>(raw: &load::Space<S>) -> Transform<S> {
         cgmath::Decomposed {
             scale: raw.scale,
@@ -100,9 +144,9 @@ pub fn load_json<D: gfx::Device>(path: &str, device: &mut D)
             Some(c) => c,
             None => return Err(LoadJsonError::NoCamera),
         };
-        let node = match world.find_node(cam.name.as_slice()) {
+        let node = match world.find_node(cam.node.as_slice()) {
             Some(n) => n,
-            None => return Err(LoadJsonError::MissingNode(cam.name.clone())),
+            None => return Err(LoadJsonError::MissingNode(cam.node.clone())),
         };
         let (fovx, fovy) = cam.angle;
         let (near, far) = cam.range;
@@ -113,17 +157,56 @@ pub fn load_json<D: gfx::Device>(path: &str, device: &mut D)
             far: far,
         };
         Camera {
+            name: cam.name.clone(),
             node: node,
             projection: proj,
         }
     };
     // read entities
-    let mut batch_context = gfx::batch::Context::new();
+    let program = match device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+        Ok(p) => p,
+        Err(e) => return Err(LoadJsonError::Program(e)),
+    };
+    let mut entities = Vec::new();
+    let mut batch_con = gfx::batch::Context::new();
+    for ent in raw.entities.iter() {
+        let node = match world.find_node(ent.node.as_slice()) {
+            Some(n) => n,
+            None => return Err(LoadJsonError::MissingNode(ent.node.clone())),
+        };
+        let mesh = match load_k3mesh(ent.mesh.as_slice(), device) {
+            Ok(m) => m,
+            Err(e) => return Err(LoadJsonError::Mesh(ent.mesh.clone(), e)),
+        };
+        let slice = {
+            let (ra, rb) = ent.range;
+            gfx::Slice {
+                start: ra as u32,
+                end: rb as u32,
+                prim_type: gfx::PrimitiveType::TriangleList,
+                kind: gfx::SliceKind::Vertex, //TODO
+            }
+        };
+        let draw_state = gfx::DrawState::new().depth(
+            gfx::state::Comparison::LessEqual,
+            true
+        );
+        let batch = match batch_con.make_batch(&program, &mesh, slice, &draw_state) {
+            Ok(b) => b,
+            Err(e) => return Err(LoadJsonError::Batch(ent.mesh.clone(), e)),
+        };
+        entities.push(Entity {
+            name: ent.mesh.clone(),
+            batch: batch,
+            node: node,
+            skeleton: None, //TODO
+        });
+    }
     // done
     Ok(Scene {
         world: world,
-        entities: Vec::new(),
+        entities: entities,
         camera: camera,
-        batch_context: batch_context,
+        batch_context: batch_con,
     })
 }
