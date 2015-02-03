@@ -32,7 +32,7 @@ fn main() {
     let mut renderer = device.create_renderer();
 
     println!("Loading the test scene...");
-    let scene = blade::scene::load_json("data/test", &mut device).unwrap();
+    let scene = blade::load::scene("data/test", &mut device).unwrap();
 
     println!("Rendering...");
     while !window.should_close() {

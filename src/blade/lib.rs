@@ -10,7 +10,7 @@ extern crate gfx;
 extern crate gfx_macros;
 
 pub mod draw;
-mod load;
+pub mod load;
 pub mod scene;
 pub mod space;
 

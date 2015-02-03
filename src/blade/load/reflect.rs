@@ -1,6 +1,4 @@
-use rustc_serialize::json;
 use std::collections::HashMap;
-use std::old_io as io;
 
 pub type Scalar = f32;
 
@@ -78,18 +76,3 @@ pub struct Material {
 pub type Data = (String, Vec<f32>);
 pub type Texture = ();  //TODO
 pub type Action = ();   //TODO
-
-#[derive(Debug)]
-pub enum Error {
-    Read(io::IoError),
-    Decode(json::DecoderError),
-}
-
-pub fn json(path: &str) -> Result<Scene, Error> {
-    match io::File::open(&Path::new(path)).read_to_string() {
-        Ok(data) => json::decode(data.as_slice()).map_err(|e|
-            Error::Decode(e)
-        ),
-        Err(e) => Err(Error::Read(e)),
-    }
-}
