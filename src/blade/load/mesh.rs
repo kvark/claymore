@@ -43,8 +43,8 @@ pub enum Error {
     Other,
 }
 
-pub fn load<'a, R: 'a + io::Reader, D: gfx::Device>(
-            reader: &'a mut Reader<'a, R>, device: &mut D)
+pub fn load<R: io::Reader, D: gfx::Device>(
+            reader: &mut Reader<R>, device: &mut D)
             -> Result<Success, Error>    {
     use gfx::PrimitiveType;
     let mut cmesh = reader.enter();

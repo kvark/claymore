@@ -24,7 +24,7 @@ pub struct Chunk<'a, R: 'a> {
     root: &'a mut Root<R>,
 }
 
-pub trait Reader<'a, R> {
+pub trait Reader<R> {
     fn read_bytes(&mut self, num: u32) -> &[u8];
     fn read_u8(&mut self) -> u8;
     fn read_u32(&mut self) -> u32;
@@ -33,7 +33,7 @@ pub trait Reader<'a, R> {
     fn enter<'b>(&'b mut self) -> Chunk<'b, R>;
 }
 
-impl<'a, R: io::Reader> Reader<'a, R> for Root<R> {
+impl<R: io::Reader> Reader<R> for Root<R> {
     fn read_bytes(&mut self, num: u32) -> &[u8] {
         self.buffer.truncate(0);
         for _ in (0.. num) {
@@ -108,7 +108,7 @@ impl<'a, R: io::Reader> Chunk<'a, R> {
     }
 }*/
 
-impl<'a, R: io::Reader> Reader<'a, R> for Chunk<'a, R> {
+impl<'a, R: io::Reader> Reader<R> for Chunk<'a, R> {
     fn read_bytes(&mut self, num: u32) -> &[u8] {
         self.count(num);
         self.root.read_bytes(num)
