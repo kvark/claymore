@@ -1,9 +1,21 @@
 use std::old_io as io;
 
+static NAME_LENGTH: u32 = 8;
+
 pub struct Root<R> {
     pub name: String,
     input: R,
     buffer: Vec<u8>,
+}
+
+impl<R> Root<R> {
+    pub fn new(name: String, input: R) -> Root<R> {
+        Root {
+            name: name,
+            input: input,
+            buffer: Vec::new(),
+        }
+    }
 }
 
 pub struct Chunk<'a, R: 'a> {
@@ -18,7 +30,7 @@ pub trait Reader<'a, R> {
     fn read_u32(&mut self) -> u32;
     fn read_bool(&mut self) -> bool;
     fn read_string(&mut self) -> String;
-    fn enter(&'a mut self) -> Chunk<'a, R>;
+    fn enter<'b>(&'b mut self) -> Chunk<'b, R>;
 }
 
 impl<'a, R: io::Reader> Reader<'a, R> for Root<R> {
@@ -49,9 +61,9 @@ impl<'a, R: io::Reader> Reader<'a, R> for Root<R> {
         String::from_utf8(buf).unwrap()
     }
 
-    fn enter(&'a mut self) -> Chunk<'a, R> {
+    fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
         let name = {
-            let raw = self.read_bytes(8);
+            let raw = self.read_bytes(NAME_LENGTH);
             let buf = match raw.position_elem(&0) {
                 Some(p) => &raw[..p],
                 None => raw,
@@ -79,7 +91,7 @@ impl<'a, R: io::Reader> Chunk<'a, R> {
 
     pub fn skip(&mut self) {
         use std::old_io::BytesReader;
-        self.root.input.bytes()
+        let _ = self.root.input.bytes()
             .skip(self.size as usize);
         self.size = 0;
     }
@@ -123,8 +135,8 @@ impl<'a, R: io::Reader> Reader<'a, R> for Chunk<'a, R> {
         s
     }
 
-    fn enter(&'a mut self) -> Chunk<'a, R> {
-        self.count(8 + 4);
+    fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
+        self.count(NAME_LENGTH + 4);
         self.root.enter()
     }
 }

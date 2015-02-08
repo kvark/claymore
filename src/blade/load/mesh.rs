@@ -1,6 +1,6 @@
 use std::old_io as io;
 use gfx;
-use load::chunk::Reader;
+use super::chunk::Reader;
 
 pub type Success = (String, gfx::Mesh, gfx::Slice);
 
@@ -32,7 +32,7 @@ fn parse_type(type_: char, normalized: u8) -> Result<gfx::attrib::Type, ()> {
 
 #[derive(Debug)]
 pub enum Error {
-    Path,
+    Path(io::IoError),
     Chunk(String),
     Signature(String),
     Topology(String),
@@ -72,7 +72,8 @@ pub fn load<'a, R: 'a + io::Reader, D: gfx::Device>(
     let mut mesh = gfx::Mesh::new(n_vert);
     while cmesh.has_more() {
         let mut cbuf = cmesh.enter();
-        match (cbuf.get_name(), slice.kind) {
+        let buf_name = cbuf.get_name().to_string();
+        match (buf_name.as_slice(), slice.kind) {
             ("buffer", _) => {
                 let stride = cbuf.read_u8();
                 let format_str = cbuf.read_string();
@@ -142,7 +143,7 @@ pub fn load<'a, R: 'a + io::Reader, D: gfx::Device>(
                 };
             },
             ("index", _) => return Err(Error::DoubleIndex),
-            (name, _) => return Err(Error::Chunk(name.to_string())),
+            _ => return Err(Error::Chunk(buf_name)),
         }
     }
     Ok((mesh_name, mesh, slice))

@@ -34,5 +34,12 @@ pub fn scene<D: gfx::Device>(path_str: &str, device: &mut D)
 pub fn mesh<D: gfx::Device>(path_str: &str, device: &mut D)
             -> Result<mesh::Success, mesh::Error> {
     info!("Loading mesh from {}", path_str);
-    Err(mesh::Error::Path)
+    let path = Path::new(format!("{}.k3mesh", path_str).as_slice());
+    match io::File::open(&path) {
+        Ok(file) => {
+            let mut reader = chunk::Root::new(path_str.to_string(), file);
+            mesh::load(&mut reader, device)
+        },
+        Err(e) => Err(mesh::Error::Path(e)),
+    }
 }
