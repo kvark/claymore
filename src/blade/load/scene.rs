@@ -114,19 +114,13 @@ pub fn load<D: gfx::Device>(raw: json::Scene, device: &mut D)
             Some(n) => n,
             None => return Err(Error::MissingNode(ent.node.clone())),
         };
-        let mesh = match super::mesh::load(ent.mesh.as_slice(), device) {
+        let (_, mesh, mut slice) = match super::mesh(ent.mesh.as_slice(), device) {
             Ok(m) => m,
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };
-        let slice = {
-            let (ra, rb) = ent.range;
-            gfx::Slice {
-                start: ra as u32,
-                end: rb as u32,
-                prim_type: gfx::PrimitiveType::TriangleList,
-                kind: gfx::SliceKind::Vertex, //TODO
-            }
-        };
+        let (ra, rb) = ent.range;
+        slice.start = ra as gfx::VertexCount;
+        slice.end = rb as gfx::VertexCount;
         let draw_state = gfx::DrawState::new().depth(
             gfx::state::Comparison::LessEqual,
             true

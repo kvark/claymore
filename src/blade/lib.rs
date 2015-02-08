@@ -1,7 +1,9 @@
 #![crate_name = "blade"]
 #![crate_type = "lib"]
-#![feature(core, plugin, io, path)]
+#![feature(collections, core, plugin, io, path)]
 
+#[macro_use]
+extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate cgmath;
 extern crate gfx;
