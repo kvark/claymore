@@ -42,7 +42,7 @@ def save_action(out,act,prefix,log):
 			while len(lis)<f.array_index:
 				lis.append(None)
 			lis.append(f)
-		else:	lis[f.array_index] = f	
+		else:	lis[f.array_index] = f
 	# write header or exit
 	if not len(rnas):
 		return None
@@ -94,7 +94,7 @@ def save_actions_ext(path,ob,prefix,log):
 		out.end()
 		out.close()
 	return anilist
-		
+
 
 ###  ACTION:CURVES   ###
 

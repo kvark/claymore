@@ -46,8 +46,8 @@ def fix_convert(type,valist):
 		scale = typeScale[type]
 		fun = lambda x: int(min(1,max(0,x))*scale)
 	return [fun(x) for x in valist]
-	
-	
+
+
 
 class Vertex:
 	__slots__= 'face', 'vert','vert2', 'coord', 'tex', 'color', 'normal', 'tangent', 'quat', 'dual'
@@ -111,53 +111,59 @@ class Mesh:
 		self.index = None
 
 
-def save_mesh(out,ob,log):
+def save_mesh(out, ob, log):
 	# ready...
-	print("\t",'Exporting Mesh',ob.data.name)
-	log.logu(0,'Mesh %s' % (ob.data.name))
+	print("\t", 'Exporting Mesh', ob.data.name)
+	log.logu(0, 'Mesh %s' % (ob.data.name))
 	arm = None
 	if ob.parent and ob.parent.type == 'ARMATURE':
 		arm = ob.parent.data
 	# steady...
 	out.begin('k3mesh')
-	(km,face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
+	(km, face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
 	# go!
 	totalFm = ''.join(a.type for a in km.attribs)
 	assert len(totalFm) == 2*len(km.attribs)
-	stride = out.sizeOf(totalFm)
-	log.logu(1,'Format: %s, Stride: %d' % (totalFm,stride))
+	stride = out.size_of(totalFm)
+	log.logu(1, 'Format: %s, Stride: %d' % (totalFm,stride))
 	out.text(ob.data.name);
-	out.pack('LL', km.nv, km.ni)
+	out.pack('L', km.nv)
 	out.text('3')	# topology
-	out.pack('BB', 2, stride)
+	# vertices
+	out.begin('buffer')
+	out.pack('B', stride)
 	out.text(totalFm)
 	for a in km.attribs:
 		out.text(a.name)
-		out.pack('BB', a.fixed, a.interpolate)
+		flag = 0
+		if a.fixed: flag |= 1
+		if a.interpolate: flag |= 2
+		out.pack('B', flag)
 	seqStart = out.tell()
 	for vats in zip(*(a.data for a in km.attribs)):
 		for a,d in zip( km.attribs, vats ):
 			tip = a.type[1]
-			size = out.sizeOf(a.type)
-			if (size&3)!=0:
-				log.log(2,'w','Attrib %d has has non-aligned type: %d' % (a.name,tip))
+			size = out.size_of(a.type)
+			if (size&3) != 0:
+				log.log(2, 'w', 'Attrib %d has has non-aligned type: %d' % (a.name,tip))
 			d2 = (d if a.fixed<=1 else fix_convert(tip,d))
-			out.array(tip,d2)
+			out.array(tip, d2)
 	assert out.tell() == seqStart + km.nv*stride
+	out.end()
 	# indices
 	if km.index:
-		totalFm = km.index.type
-		stride = out.sizeOf(totalFm)
-		out.pack('B',0)
-		out.text(totalFm, km.index.name)
-		out.pack('BB',0,0)
+		out.begin('index')
+		stype = km.index.type[0];
+		stride = out.size_of(stype)
+		out.pack('Lc', km.ni, bytes(stype, 'utf-8'))
 		seqStart = out.tell()
 		for d in km.index.data:
-			out.array(km.index.type[1], d)
+			out.array(stype, d)
 		assert out.tell() == seqStart + km.ni*stride
+		out.end()
 	# done
 	out.end()	#k3mesh
-	return (km,face_num)
+	return (km, face_num)
 
 
 def collect_attributes(mesh,armature,groups,no_output,log):
@@ -212,7 +218,7 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 		avg += face.hand
 		nor = face.normal
 		for i in range(3):
-			v = Vertex( face.v[i] ) 
+			v = Vertex( face.v[i] )
 			v.normal = (face.no[i],nor)[nor.length_squared>0.1]
 			v.tex	= [layer[i] for layer in face.uv]
 			v.color	= [layer[i] for layer in face.color]
@@ -357,15 +363,15 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 	log.logu(1, 'total: %d vertices, %d faces' % (len(ar_vert),len(ar_face)))
 	avg_vu = 3.0 * len(ar_face) / len(ar_vert)
 	log.log(1,'i', '%.2f avg vertex usage' % (avg_vu))
-	
+
 	km = Mesh()
-	
+
 	if 'putVertex':
 		vat = Attribute('Position', '3f', 0)
 		km.attribs.append(vat)
 		for v in ar_vert:
 			vat.data.append( v.coord.to_3d() )
-			
+
 	if Settings.putNormal:
 		#vat = Attribute('Normal', '3f', 0)
 		vat = Attribute('Normal', '4h', 2)
@@ -373,7 +379,7 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 		km.attribs.append(vat)
 		for v in ar_vert:
 			vat.data.append( v.normal.to_4d() )
-			
+
 	if hasTangent:
 		vat = Attribute('Tangent', '4b', 2)
 		km.attribs.append(vat)
@@ -388,7 +394,7 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 		for v in ar_vert:
 			vat1.data.append([ v.quat.x, v.quat.y, v.quat.z, v.quat.w ])
 			vat2.data.append([ int(v.face.hand) ])
-	
+
 	if Settings.putUv:
 		all = mesh.uv_textures
 		log.log(1,'i', 'UV layers: %d' % (len(all)))
@@ -426,9 +432,9 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 	if 'index':
 		km.ni = len(ar_face) * 3
 		nv = len(ar_vert)
-		stype = '1I'
-		if nv<0x100:		stype = '1B'
-		elif nv<0x10000:	stype = '1H'
+		stype = 'I'
+		if nv<0x100:		stype = 'B'
+		elif nv<0x10000:	stype = 'H'
 		km.index = vat = Attribute('', stype, 0)
 		for face in ar_face:
 			vat.data.append( face.vi )
@@ -467,7 +473,7 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 			vat2.data.append(r_weights)
 		avg /= len(ar_vert)
 		log.logu(1, 'bone weights: %d empty, %.1f avg' % (nempty,avg))
-	
+
 	# 9: the end!
 	km.nv = len(ar_vert)
-	return (km,face_num)
+	return (km, face_num)

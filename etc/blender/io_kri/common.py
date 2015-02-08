@@ -18,38 +18,38 @@ class Settings:
 
 
 class Writer:
-	__slots__= 'fx','pos'
-	def __init__(self,path):
-		self.fx = open(path,'wb')
+	__slots__= 'fx', 'pos'
+	def __init__(self, path):
+		self.fx = open(path, 'wb')
 		self.pos = []
-	def sizeOf(self,tip):
+	def size_of(self, tip):
 		import struct
 		return struct.calcsize(tip)
-	def pack(self,tip,*args):
+	def pack(self, tip, *args):
 		import struct
-		self.fx.write( struct.pack('<'+tip,*args) )
-	def array(self,tip,ar):
+		self.fx.write(struct.pack('<'+tip, *args))
+	def array(self, tip, ar):
 		import array
-		array.array(tip,ar).tofile(self.fx)
-	def text(self,*args):
+		array.array(tip, ar).tofile(self.fx)
+	def text(self, *args):
 		for s in args:
 			x = len(s)
 			assert x<256
 			bt = bytes(s,'ascii')
-			self.pack('B%ds'%(x),x,bt)
-	def begin(self,name):
+			self.pack('B%ds'%(x), x, bt)
+	def begin(self, name):
 		import struct
-		assert len(name)<8
-		bt = bytes(name,'ascii')
-		self.fx.write( struct.pack('<8sL',bt,0) )
-		self.pos.append( self.fx.tell() )
+		assert len(name) < 8
+		bt = bytes(name, 'ascii')
+		self.fx.write(struct.pack('<8sL', bt, 0))
+		self.pos.append(self.fx.tell())
 	def end(self):
 		import struct
 		pos = self.pos.pop()
 		off = self.fx.tell() - pos
-		self.fx.seek(-off-4,1)
-		self.fx.write( struct.pack('<L',off) )
-		self.fx.seek(+off+0,1)
+		self.fx.seek(-off-4, 1)
+		self.fx.write(struct.pack('<L', off))
+		self.fx.seek(+off+0, 1)
 	def tell(self):
 		return self.fx.tell()
 	def close(self):
@@ -58,13 +58,13 @@ class Writer:
 
 
 class Logger:
-	tabs = ('',"\t","\t\t","\t\t\t")
-	__slots__= 'file','counter','stop'
-	def __init__(self,path):
-		self.file = open(path,'w')
-		self.counter = {'':0,'i':0,'w':0,'e':0}
+	tabs = ('', "\t", "\t\t", "\t\t\t")
+	__slots__= 'file', 'counter', 'stop'
+	def __init__(self, path):
+		self.file = open(path, 'w')
+		self.counter = {'':0, 'i':0, 'w':0, 'e':0}
 		self.stop = False
-	def log(self,indent,level,message):
+	def log(self, indent, level, message):
 		self.counter[level] += 1
 		if level=='i' and not Settings.showInfo:
 			return
@@ -72,9 +72,9 @@ class Logger:
 			return
 		if level=='e' and Settings.breakError:
 			self.stop = True
-		self.file.write("%s(%c) %s\n" % (Logger.tabs[indent],level,message))
-	def logu(self,indent,message):
-		self.file.write( "%s%s\n" % (Logger.tabs[indent],message) )
+		self.file.write("%s(%c) %s\n" % (Logger.tabs[indent], level, message))
+	def logu(self, indent, message):
+		self.file.write( "%s%s\n" % (Logger.tabs[indent], message) )
 	def conclude(self):
 		c = self.counter
 		self.file.write('%d errors, %d warnings, %d infos' % (c['e'],c['w'],c['i']))
@@ -83,7 +83,7 @@ class Logger:
 
 
 
-def save_color(out,rgb):
+def save_color(out, rgb):
 	for c in rgb:
 		out.pack('B', int(255*c) )
 
