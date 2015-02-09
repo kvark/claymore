@@ -1,6 +1,8 @@
 #![crate_name = "claymore"]
 #![crate_type = "bin"]
 
+#![feature(core)]
+
 extern crate blade;
 extern crate gfx;
 extern crate glfw;
@@ -32,7 +34,10 @@ fn main() {
     let mut renderer = device.create_renderer();
 
     println!("Loading the test scene...");
-    let scene = blade::load::scene("data/test", &mut device).unwrap();
+    let scene = {
+        let mut context = blade::load::Context::new(&mut device);
+        blade::load::scene("data/test", &mut context).unwrap()
+    };
 
     println!("Rendering...");
     while !window.should_close() {

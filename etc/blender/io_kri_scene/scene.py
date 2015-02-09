@@ -227,10 +227,8 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 	collection_mesh, collection_node_anim = 'all', 'nodes'
 	if export_meshes:
 		out_mesh	= Writer('%s/%s.k3mesh' % (filepath, collection_mesh))
-		out_mesh.begin('*mesh')
 	if export_actions:
 		out_act_node= Writer('%s/%s.k3act' % (filepath, collection_node_anim))
-		out_act_node.begin('*action')
 	sc = context.scene
 	print('Exporting Scene...')
 	log.logu(0, 'Scene %s' % (filepath))
@@ -309,10 +307,8 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 		for ani in anims:
 			current['actions'].append('%s@%s' % (ani, collection_node_anim))
 	if out_mesh != None:
-		out_mesh.end()
 		out_mesh.close()
 	if out_act_node != None:
-		out_act_node.end()
 		out_act_node.close()
 	# go!
 	document = {

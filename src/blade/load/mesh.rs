@@ -1,31 +1,34 @@
 use std::old_io as io;
 use gfx;
-use super::chunk::Reader;
+use super::chunk::Root;
 
-pub type Success = (String, gfx::Mesh, gfx::Slice);
+pub type Success = (gfx::Mesh, gfx::Slice);
 
+/// Parse type character to gfx attribute type
+/// using Python packing notation:
+/// https://docs.python.org/2/library/struct.html#format-characters
 fn parse_type(type_: char, normalized: u8) -> Result<gfx::attrib::Type, ()> {
     use gfx::attrib::Type::*;
     use gfx::attrib::IntSubType::*;
     use gfx::attrib::IntSize::*;
     use gfx::attrib::SignFlag::*;
-    use gfx::attrib::FloatSubType::Default;
+    use gfx::attrib::FloatSubType::*;
     use gfx::attrib::FloatSize::*;
     Ok(match (type_, normalized) {
         ('b', 0) => Int(Raw, U8, Signed),
         ('B', 0) => Int(Raw, U8, Unsigned),
         ('b', 1) => Int(Normalized, U8, Signed),
         ('B', 1) => Int(Normalized, U8, Unsigned),
-        ('s', 0) => Int(Raw, U16, Signed),
-        ('S', 0) => Int(Raw, U16, Unsigned),
-        ('s', 1) => Int(Normalized, U16, Signed),
-        ('S', 1) => Int(Normalized, U16, Unsigned),
+        ('h', 0) => Int(Raw, U16, Signed),
+        ('H', 0) => Int(Raw, U16, Unsigned),
+        ('h', 1) => Int(Normalized, U16, Signed),
+        ('H', 1) => Int(Normalized, U16, Unsigned),
         ('l', 0) => Int(Raw, U32, Signed),
         ('L', 0) => Int(Raw, U32, Unsigned),
         ('l', 1) => Int(Normalized, U32, Signed),
         ('L', 1) => Int(Normalized, U32, Unsigned),
-        ('h', 0) => Float(Default, F16),
         ('f', 0) => Float(Default, F32),
+        ('d', 0) => Float(Precision, F64),
         _ => return Err(()),
     })
 }
@@ -44,11 +47,11 @@ pub enum Error {
 }
 
 pub fn load<R: io::Reader, D: gfx::Device>(
-            reader: &mut Reader<R>, device: &mut D)
-            -> Result<Success, Error>    {
+            reader: &mut Root<R>, device: &mut D)
+            -> Result<(String, Success), Error> {
     use gfx::PrimitiveType;
     let mut cmesh = reader.enter();
-    if cmesh.get_name() != "k3mesh"    {
+    if cmesh.get_name() != "mesh"    {
         return Err(Error::Signature(cmesh.get_name().to_string()))
     }
     let mesh_name = cmesh.read_string();
@@ -83,16 +86,9 @@ pub fn load<R: io::Reader, D: gfx::Device>(
                     device.create_buffer_static_raw(data)
                 };
                 let mut offset = 0;
-                let mut ft = format_str.bytes();
-                loop {
-                    let el_count = match ft.next() {
-                        Some(s) => s,
-                        None => break,
-                    };
-                    let type_ = match ft.next() {
-                        Some(t) => t as char,
-                        None => return Err(Error::Other),
-                    };
+                for sub in format_str.as_bytes().chunks(2) {
+                    let el_count = sub[0] - ('0' as u8);
+                    let type_ = sub[1] as char;
                     let name = cbuf.read_string();
                     let flags = cbuf.read_u8();
                     debug!("\t\tname: {}, count: {}, type: {}, flags: {}",
@@ -103,7 +99,7 @@ pub fn load<R: io::Reader, D: gfx::Device>(
                         Err(_) => return Err(Error::AttribType(type_, flags)),
                     };
                     mesh.attributes.push(gfx::Attribute {
-                        name: name,
+                        name: format!("{}{}", super::PREFIX_ATTRIB, name),
                         buffer: buffer.raw(),
                         format: gfx::attrib::Format {
                             elem_count: el_count,
@@ -146,5 +142,5 @@ pub fn load<R: io::Reader, D: gfx::Device>(
             _ => return Err(Error::Chunk(buf_name)),
         }
     }
-    Ok((mesh_name, mesh, slice))
+    Ok((mesh_name, (mesh, slice)))
 }

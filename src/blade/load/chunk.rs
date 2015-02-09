@@ -1,4 +1,6 @@
 use std::old_io as io;
+use std::fmt;
+use std::ops::{Deref, DerefMut};
 
 static NAME_LENGTH: u32 = 8;
 
@@ -6,35 +8,31 @@ pub struct Root<R> {
     pub name: String,
     input: R,
     buffer: Vec<u8>,
+    position: u32,
 }
 
-impl<R> Root<R> {
+impl<R: io::Reader> Root<R> {
     pub fn new(name: String, input: R) -> Root<R> {
         Root {
             name: name,
             input: input,
             buffer: Vec::new(),
+            position: 0,
         }
     }
-}
 
-pub struct Chunk<'a, R: 'a> {
-    name: String,
-    size: u32,
-    root: &'a mut Root<R>,
-}
+    pub fn get_pos(&self) -> u32 {
+        self.position
+    }
 
-pub trait Reader<R> {
-    fn read_bytes(&mut self, num: u32) -> &[u8];
-    fn read_u8(&mut self) -> u8;
-    fn read_u32(&mut self) -> u32;
-    fn read_bool(&mut self) -> bool;
-    fn read_string(&mut self) -> String;
-    fn enter<'b>(&'b mut self) -> Chunk<'b, R>;
-}
+    fn skip(&mut self, num: u32) {
+        use std::old_io::BytesReader;
+        self.position += num;
+        let _ = self.input.bytes().skip(num as usize);
+    }
 
-impl<R: io::Reader> Reader<R> for Root<R> {
-    fn read_bytes(&mut self, num: u32) -> &[u8] {
+    pub fn read_bytes(&mut self, num: u32) -> &[u8] {
+        self.position += num;
         self.buffer.truncate(0);
         for _ in (0.. num) {
             let b = self.input.read_u8().unwrap();
@@ -43,25 +41,30 @@ impl<R: io::Reader> Reader<R> for Root<R> {
         self.buffer.as_slice()
     }
 
-    fn read_u8(&mut self) -> u8 {
+    pub fn read_u8(&mut self) -> u8 {
+        self.position += 1;
         self.input.read_u8().unwrap()
     }
 
-    fn read_u32(&mut self) -> u32 {
+    pub fn read_u32(&mut self) -> u32 {
+        self.position += 4;
         self.input.read_le_u32().unwrap()
     }
 
-    fn read_bool(&mut self) -> bool {
+    pub fn read_bool(&mut self) -> bool {
+        self.position += 1;
         self.input.read_u8().unwrap() != 0
     }
 
-    fn read_string(&mut self) -> String {
+    pub fn read_string(&mut self) -> String {
         let size = self.input.read_u8().unwrap();
+        self.position += 1 + (size as u32);
         let buf = self.input.read_exact(size as usize).unwrap();
         String::from_utf8(buf).unwrap()
     }
 
-    fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
+    pub fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
+        self.position += 4 + NAME_LENGTH;
         let name = {
             let raw = self.read_bytes(NAME_LENGTH);
             let buf = match raw.position_elem(&0) {
@@ -75,8 +78,22 @@ impl<R: io::Reader> Reader<R> for Root<R> {
         Chunk    {
             name: name,
             size: size,
+            end_pos: self.position + size,
             root: self,
         }
+    }
+}
+
+pub struct Chunk<'a, R: 'a> {
+    name: String,
+    size: u32,
+    end_pos: u32,
+    root: &'a mut Root<R>,
+}
+
+impl<'a, R> fmt::Display for Chunk<'a, R> {
+    fn fmt(&self, fm: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(fm, "Chunk({}, {} left)", self.name, self.size)
     }
 }
 
@@ -86,57 +103,31 @@ impl<'a, R: io::Reader> Chunk<'a, R> {
     }
 
     pub fn has_more(&self)-> bool {
-        self.size != 0
+        self.root.get_pos() < self.end_pos
     }
 
-    pub fn skip(&mut self) {
-        use std::old_io::BytesReader;
-        let _ = self.root.input.bytes()
-            .skip(self.size as usize);
-        self.size = 0;
-    }
-
-    fn count(&mut self, num: u32) {
-        assert!(self.size >= num);
-        self.size -= num;
+    pub fn ignore(self) {
+        let left = self.end_pos - self.root.get_pos();
+        self.root.skip(left)
     }
 }
 
-/*impl<'a, R> Drop for Chunk<'a, R> {
+#[unsafe_destructor]
+impl<'a, R: io::Reader> Drop for Chunk<'a, R> {
     fn drop(&mut self) {
-        assert_eq!(self.size, 0)
+        assert!(!self.has_more())
     }
-}*/
+}
 
-impl<'a, R: io::Reader> Reader<R> for Chunk<'a, R> {
-    fn read_bytes(&mut self, num: u32) -> &[u8] {
-        self.count(num);
-        self.root.read_bytes(num)
+impl<'a, R> Deref for Chunk<'a, R> {
+    type Target = Root<R>;
+    fn deref(&self) -> &Root<R> {
+        self.root
     }
+}
 
-    fn read_u8(&mut self) -> u8 {
-        self.count(1);
-        self.root.read_u8()
-    }
-
-    fn read_u32(&mut self) -> u32 {
-        self.count(4);
-        self.root.read_u32()
-    }
-
-    fn read_bool(&mut self) -> bool {
-        self.count(1);
-        self.root.read_bool()
-    }
-
-    fn read_string(&mut self) -> String {
-        let s = self.root.read_string();
-        self.count(s.len() as u32 + 1);
-        s
-    }
-
-    fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
-        self.count(NAME_LENGTH + 4);
-        self.root.enter()
+impl<'a, R> DerefMut for Chunk<'a, R> {
+    fn deref_mut(&mut self) -> &mut Root<R> {
+        self.root
     }
 }

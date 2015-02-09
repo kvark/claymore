@@ -119,7 +119,7 @@ def save_mesh(out, ob, log):
 	if ob.parent and ob.parent.type == 'ARMATURE':
 		arm = ob.parent.data
 	# steady...
-	out.begin('k3mesh')
+	out.begin('mesh')
 	(km, face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
 	# go!
 	totalFm = ''.join(a.type for a in km.attribs)
@@ -133,12 +133,6 @@ def save_mesh(out, ob, log):
 	out.begin('buffer')
 	out.pack('B', stride)
 	out.text(totalFm)
-	for a in km.attribs:
-		out.text(a.name)
-		flag = 0
-		if a.fixed: flag |= 1
-		if a.interpolate: flag |= 2
-		out.pack('B', flag)
 	seqStart = out.tell()
 	for vats in zip(*(a.data for a in km.attribs)):
 		for a,d in zip( km.attribs, vats ):
@@ -149,6 +143,13 @@ def save_mesh(out, ob, log):
 			d2 = (d if a.fixed<=1 else fix_convert(tip,d))
 			out.array(tip, d2)
 	assert out.tell() == seqStart + km.nv*stride
+	# extra info per attribute
+	for a in km.attribs:
+		out.text(a.name)
+		flag = 0
+		if a.fixed: flag |= 1
+		if a.interpolate: flag |= 2
+		out.pack('B', flag)
 	out.end()
 	# indices
 	if km.index:
@@ -162,7 +163,7 @@ def save_mesh(out, ob, log):
 		assert out.tell() == seqStart + km.ni*stride
 		out.end()
 	# done
-	out.end()	#k3mesh
+	out.end()	#mesh
 	return (km, face_num)
 
 

@@ -1,6 +1,6 @@
 #![crate_name = "blade"]
 #![crate_type = "lib"]
-#![feature(collections, core, io, plugin, path, rustc_private)]
+#![feature(collections, core, io, plugin, path, rustc_private, unsafe_destructor)]
 
 #[macro_use]
 extern crate log;

@@ -5,15 +5,15 @@ use super::reflect as json;
 static VERTEX_SRC: gfx::ShaderSource<'static> = shaders! {
     glsl_150: b"#version 150 core
 
-    in vec3 a_Pos;
-    in vec2 a_TexCoord;
-    out vec2 v_TexCoord;
+    in vec3 a_Position;
+    //in vec2 a_TexCoord;
+    //out vec2 v_TexCoord;
 
     uniform mat4 u_Transform;
 
     void main() {
-        v_TexCoord = a_TexCoord;
-        gl_Position = u_Transform * vec4(a_Pos, 1.0);
+        //v_TexCoord = a_TexCoord;
+        gl_Position = u_Transform * vec4(a_Position, 1.0);
     }
     "
 };
@@ -21,13 +21,13 @@ static VERTEX_SRC: gfx::ShaderSource<'static> = shaders! {
 static FRAGMENT_SRC: gfx::ShaderSource<'static> = shaders! {
     glsl_150: b"#version 150 core
 
-    in vec2 v_TexCoord;
+    //in vec2 v_TexCoord;
     out vec4 o_Color;
 
-    uniform vec4 color;
+    uniform vec4 u_Color;
 
     void main() {
-        o_Color = color;
+        o_Color = u_Color;
     }
     "
 };
@@ -45,7 +45,8 @@ pub type SceneJson = ::scene::Scene<f32,
     cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>
 >;
 
-pub fn load<D: gfx::Device>(raw: json::Scene, device: &mut D)
+pub fn load<'a, D: gfx::Device>(raw: json::Scene,
+            context: &mut super::Context<D>)
             -> Result<SceneJson, Error> {
     use gfx::DeviceHelper;
     fn read_space<S: cgmath::BaseFloat>(space: &json::Space<S>)
@@ -103,7 +104,8 @@ pub fn load<D: gfx::Device>(raw: json::Scene, device: &mut D)
         }
     };
     // read entities
-    let program = match device.link_program(VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+    let program = match context.device.link_program(
+            VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
         Ok(p) => p,
         Err(e) => return Err(Error::Program(e)),
     };
@@ -114,8 +116,8 @@ pub fn load<D: gfx::Device>(raw: json::Scene, device: &mut D)
             Some(n) => n,
             None => return Err(Error::MissingNode(ent.node.clone())),
         };
-        let (_, mesh, mut slice) = match super::mesh(ent.mesh.as_slice(), device) {
-            Ok(m) => m,
+        let (mesh, mut slice) = match context.request_mesh(ent.mesh.as_slice()) {
+            Ok(success) => success,
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };
         let (ra, rb) = ent.range;
