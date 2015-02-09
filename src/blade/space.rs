@@ -1,4 +1,4 @@
-use cgmath::{BaseNum, Transform, Transform3};
+use cgmath::{BaseFloat, Transform, Transform3};
 use Id;
 
 #[derive(Copy)]
@@ -35,12 +35,22 @@ pub struct World<S, T> {
     skeletons: Vec<Skeleton<T>>,
 }
 
-impl<S: BaseNum, T: Transform3<S> + Clone> World<S, T> {
+impl<S: BaseFloat, T: Transform3<S> + Clone> World<S, T> {
     pub fn new() -> World<S, T> {
         World {
             nodes: Vec::new(),
             skeletons: Vec::new(),
         }
+    }
+
+    pub fn get_node(&self, id: Id<Node<T>>) -> &Node<T> {
+        let Id(nid) = id;
+        self.nodes.get(nid).unwrap()
+    }
+
+    pub fn mut_node(&mut self, id: Id<Node<T>>) -> &mut Node<T> {
+        let Id(nid) = id;
+        self.nodes.get_mut(nid).unwrap()
     }
 
     pub fn find_node(&self, name: &str) -> Option<Id<Node<T>>> {
@@ -49,7 +59,7 @@ impl<S: BaseNum, T: Transform3<S> + Clone> World<S, T> {
     }
 
     pub fn add_node(&mut self, name: String, parent: Parent<T>, local: T)
-            -> Id<Node<T>> {
+                    -> Id<Node<T>> {
         //TODO: check that parent is valid
         let nid = Id(self.nodes.len());
         self.nodes.push(Node {

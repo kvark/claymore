@@ -34,10 +34,11 @@ fn main() {
     let mut renderer = device.create_renderer();
 
     println!("Loading the test scene...");
-    let scene = {
+    let (mut world, mut scene) = {
         let mut context = blade::load::Context::new(&mut device);
         blade::load::scene("data/test", &mut context).unwrap()
     };
+    scene.camera.projection.aspect = w as f32 / h as f32;
 
     println!("Rendering...");
     while !window.should_close() {
@@ -50,13 +51,16 @@ fn main() {
             }
         }
 
+        world.update();
+        scene.update(&world);
+
         let clear_data = gfx::ClearData {
             color: [0.2, 0.3, 0.4, 1.0],
             depth: 1.0,
             stencil: 0,
         };
         renderer.clear(clear_data, gfx::COLOR | gfx::DEPTH, &frame);
-        scene.draw(&mut renderer);
+        scene.draw(&mut renderer, &frame);
 
         device.submit(renderer.as_buffer());
         renderer.reset();

@@ -41,9 +41,9 @@ pub enum Error {
     Batch(String, gfx::batch::BatchError),
 }
 
-pub type SceneJson = ::scene::Scene<f32,
-    cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>
->;
+pub type SceneJson = (::scene::World<f32>,
+    ::scene::Scene<f32, cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>>
+);
 
 pub fn load<'a, D: gfx::Device>(raw: json::Scene,
             context: &mut super::Context<D>)
@@ -134,10 +134,11 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
         entities.push(::scene::Entity {
             name: ent.mesh.clone(),
             batch: batch,
+            params: ::scene::Params::new(),
             node: node,
             skeleton: None, //TODO
         });
     }
     // done
-    Ok(::scene::Scene::new(world, entities, camera, batch_con))
+    Ok((world, ::scene::Scene::new(entities, camera, batch_con)))
 }
