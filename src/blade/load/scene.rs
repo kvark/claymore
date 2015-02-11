@@ -1,39 +1,9 @@
 use cgmath;
 use gfx;
 use super::reflect as json;
-use super::param::Params;
+use super::program;
 
 pub type Scalar = f32;
-
-static VERTEX_SRC: gfx::ShaderSource<'static> = shaders! {
-    glsl_150: b"#version 150 core
-
-    in vec3 a_Position;
-    //in vec2 a_TexCoord;
-    //out vec2 v_TexCoord;
-
-    uniform mat4 u_Transform;
-
-    void main() {
-        //v_TexCoord = a_TexCoord;
-        gl_Position = u_Transform * vec4(a_Position, 1.0);
-    }
-    "
-};
-
-static FRAGMENT_SRC: gfx::ShaderSource<'static> = shaders! {
-    glsl_150: b"#version 150 core
-
-    //in vec2 v_TexCoord;
-    out vec4 o_Color;
-
-    uniform vec4 u_Color;
-
-    void main() {
-        o_Color = u_Color;
-    }
-    "
-};
 
 #[derive(Debug)]
 pub enum Error {
@@ -46,7 +16,7 @@ pub enum Error {
 
 pub type Projection = cgmath::PerspectiveFov<Scalar, cgmath::Rad<Scalar>>;
 pub type SceneJson = (::scene::World<Scalar>,
-    ::scene::Scene<Scalar, Params, Projection>
+    ::scene::Scene<Scalar, program::Params, Projection>
 );
 
 pub fn load<'a, D: gfx::Device>(raw: json::Scene,
@@ -109,7 +79,8 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
     };
     // read entities
     let program = match context.device.link_program(
-            VERTEX_SRC.clone(), FRAGMENT_SRC.clone()) {
+            program::VERTEX_SRC.clone(),
+            program::FRAGMENT_SRC.clone()) {
         Ok(p) => p,
         Err(e) => return Err(Error::Program(e)),
     };
@@ -138,7 +109,7 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
         entities.push(::scene::Entity {
             name: ent.mesh.clone(),
             batch: batch,
-            params: Params::new(),
+            params: program::Params::new(),
             node: node,
             skeleton: None, //TODO
         });

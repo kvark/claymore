@@ -1,6 +1,6 @@
 pub mod chunk;
 mod mesh;
-mod param;
+mod program;
 mod reflect;
 mod scene;
 
