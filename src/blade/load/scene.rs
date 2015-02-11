@@ -1,6 +1,9 @@
 use cgmath;
 use gfx;
 use super::reflect as json;
+use super::param::Params;
+
+pub type Scalar = f32;
 
 static VERTEX_SRC: gfx::ShaderSource<'static> = shaders! {
     glsl_150: b"#version 150 core
@@ -41,8 +44,9 @@ pub enum Error {
     Batch(String, gfx::batch::BatchError),
 }
 
-pub type SceneJson = (::scene::World<f32>,
-    ::scene::Scene<f32, cgmath::PerspectiveFov<f32, cgmath::Rad<f32>>>
+pub type Projection = cgmath::PerspectiveFov<Scalar, cgmath::Rad<Scalar>>;
+pub type SceneJson = (::scene::World<Scalar>,
+    ::scene::Scene<Scalar, Params, Projection>
 );
 
 pub fn load<'a, D: gfx::Device>(raw: json::Scene,
@@ -63,9 +67,9 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
             },
         }
     }
-    fn populate_world(world: &mut ::space::World<f32, ::scene::Transform<f32>>,
+    fn populate_world(world: &mut ::scene::World<Scalar>,
                       raw_nodes: &[json::Node],
-                      parent: ::space::Parent<::scene::Transform<f32>>) {
+                      parent: ::space::Parent<::scene::Transform<Scalar>>) {
         for n in raw_nodes.iter() {
             let space = read_space(&n.space);
             let nid = world.add_node(n.name.clone(), parent, space);
@@ -134,7 +138,7 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
         entities.push(::scene::Entity {
             name: ent.mesh.clone(),
             batch: batch,
-            params: ::scene::Params::new(),
+            params: Params::new(),
             node: node,
             skeleton: None, //TODO
         });
