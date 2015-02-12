@@ -22,7 +22,7 @@ pub type SceneJson = (::scene::World<Scalar>,
 pub fn load<'a, D: gfx::Device>(raw: json::Scene,
             context: &mut super::Context<D>)
             -> Result<SceneJson, Error> {
-    use gfx::DeviceHelper;
+    use gfx::DeviceExt;
     fn read_space<S: cgmath::BaseFloat>(space: &json::Space<S>)
                   -> ::scene::Transform<S> {
         cgmath::Decomposed {

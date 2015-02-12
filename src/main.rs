@@ -1,13 +1,11 @@
 #![crate_name = "claymore"]
 #![crate_type = "bin"]
 
-#![feature(core)]
-
 extern crate blade;
 extern crate gfx;
 extern crate glfw;
 
-use gfx::{Device, DeviceHelper};
+use gfx::{Device, DeviceExt};
 use glfw::Context;
 
 fn main() {
