@@ -1,13 +1,23 @@
-Get ready:
-  1. figure out the scene format
-    - finish glTF import for GFX
-    - evaluate glTF? better have something API agnostic
-    - fall back to my own format
-  2. find and export relevant models
+TODO:
+- [x] Spatial hierarchy
+- [ ] Build asset pipeline
+  - [x] meshes
+  - [x] scenes
+  - [ ] skeletons
+  - [ ] materials
+  - [ ] animations
+- [ ] Graphics pipeline
+  - [ ] entities
+  - [ ] materials
+  - [ ] techniques
+  - [ ] render queues
+- [ ] Basic rendering with shader compositing
+  - evaluate alternatives to compositing
+- [ ] Grid
+- [ ] Turn-based action (move, attack, wait)
 
-Implement:
-  1. High-level graphics pipeline (entities, materials, techniques)
-  2. Basic rendering with shader compositing
-  3. Grid
-  4. Turn-based action (move, attack, wait)
-  5. ... profit!
+Models:
+  - [Fire Emblem characters](http://www.models-resource.com/wii/fireemblempathofradiance/)
+  - [Final Fantasy X characters](http://www.models-resource.com/playstation_2/finalfantasyx/)
+  - [Snake woman monster](http://artist-3d.com/free_3d_models/dnm/model_disp.php?uid=2440&ad=&op=op)
+  - [Leo man](http://www.models-resource.com/pc_computer/digimonmasters/model/7258/)
