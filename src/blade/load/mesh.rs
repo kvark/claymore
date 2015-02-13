@@ -125,7 +125,7 @@ pub fn load<R: io::Reader, D: gfx::Device>(
                         let buf = device.create_buffer_static_raw(data);
                         gfx::SliceKind::Index8(buf.cast(), 0)
                     },
-                    'S' => {
+                    'H' => {
                         let data = cbuf.read_bytes(n_ind * 2);
                         let buf = device.create_buffer_static_raw(data);
                         gfx::SliceKind::Index16(buf.cast(), 0)

@@ -74,6 +74,7 @@ impl<R: io::Reader> Root<R> {
             String::from_utf8_lossy(buf)
                 .into_owned()
         };
+        debug!("Entering chunk {}", name);
         let size = self.read_u32();
         Chunk    {
             name: name,
@@ -115,6 +116,7 @@ impl<'a, R: io::Reader> Chunk<'a, R> {
 #[unsafe_destructor]
 impl<'a, R: io::Reader> Drop for Chunk<'a, R> {
     fn drop(&mut self) {
+        debug!("Leaving chunk");
         assert!(!self.has_more())
     }
 }

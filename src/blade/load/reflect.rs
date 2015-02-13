@@ -14,7 +14,7 @@ pub struct Scene {
 
 #[derive(RustcDecodable)]
 pub struct Global {
-    pub gravity: (f32, f32, f32),
+    pub gravity: (Scalar, Scalar, Scalar),
 }
 
 #[derive(RustcDecodable)]
@@ -47,12 +47,12 @@ pub struct Light {
     pub name: String,
     pub node: String,
     pub kind: String,
-    pub color: (f32, f32, f32),
-    pub energy: f32,
-    pub distance: f32,
-    pub attenuation: (f32, f32),
+    pub color: (Scalar, Scalar, Scalar),
+    pub energy: Scalar,
+    pub distance: Scalar,
+    pub attenuation: (Scalar, Scalar),
     pub spherical: bool,
-    pub parameters: Vec<f32>,
+    pub parameters: Vec<Scalar>,
     pub actions: Vec<Action>,
 }
 
@@ -60,8 +60,8 @@ pub struct Light {
 pub struct Camera {
     pub name: String,
     pub node: String,
-    pub angle: (f32, f32),
-    pub range: (f32, f32),
+    pub angle: (Scalar, Scalar),
+    pub range: (Scalar, Scalar),
     pub actions: Vec<Action>,
 }
 
@@ -74,5 +74,15 @@ pub struct Material {
 }
 
 pub type Data = (String, Vec<f32>);
-pub type Texture = ();  //TODO
+
+#[derive(RustcDecodable)]
+pub struct Texture {
+    pub name: String,
+    pub path: String,
+    pub filter: u8,
+    pub wrap: i8,
+    pub offset: (Scalar, Scalar, Scalar),
+    pub scale: (Scalar, Scalar, Scalar),
+}
+
 pub type Action = ();   //TODO

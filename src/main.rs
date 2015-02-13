@@ -33,7 +33,7 @@ fn main() {
     println!("Loading the test scene...");
     let (mut world, mut scene) = {
         let mut context = blade::load::Context::new(&mut device);
-        blade::load::scene("data/test", &mut context).unwrap()
+        blade::load::scene("data/vika", &mut context).unwrap()
     };
     scene.camera.projection.aspect = w as f32 / h as f32;
 
