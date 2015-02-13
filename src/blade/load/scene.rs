@@ -79,8 +79,7 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
     };
     // read entities
     let program = match context.device.link_program(
-            program::VERTEX_SRC.clone(),
-            program::FRAGMENT_SRC.clone()) {
+            program::VERTEX_SRC, program::FRAGMENT_SRC) {
         Ok(p) => p,
         Err(e) => return Err(Error::Program(e)),
     };

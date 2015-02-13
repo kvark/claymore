@@ -1,51 +1,38 @@
 use cgmath;
-use gfx::ShaderSource;
 use super::scene::Scalar;
 
-pub static VERTEX_SRC: ShaderSource<'static> = ShaderSource {
-    glsl_150: Some(b"
-        #version 150 core
+pub static VERTEX_SRC: &'static [u8] = b"
+    #version 150 core
 
-        uniform mat4 u_Transform;
-        uniform mat3 u_NormalRotation;
+    uniform mat4 u_Transform;
+    uniform mat3 u_NormalRotation;
 
-        in vec3 a_Position;
-        in vec3 a_Normal;
+    in vec3 a_Position;
+    in vec3 a_Normal;
 
-        out vec3 v_Normal;
+    out vec3 v_Normal;
 
-        void main() {
-            gl_Position = u_Transform * vec4(a_Position, 1.0);
-            v_Normal = u_NormalRotation * a_Normal;
-        }
-    "),
-    glsl_120: None,
-    glsl_130: None,
-    glsl_140: None,
-    targets: &[],
-};
+    void main() {
+        gl_Position = u_Transform * vec4(a_Position, 1.0);
+        v_Normal = u_NormalRotation * a_Normal;
+    }
+";
 
-pub static FRAGMENT_SRC: ShaderSource<'static> = ShaderSource {
-    glsl_150: Some(b"
-        #version 150 core
+pub static FRAGMENT_SRC: &'static [u8] = b"
+    #version 150 core
 
-        const vec3 c_LightPos = vec3(10.0, 10.0, 10.0); //view space
-        uniform vec4 u_Color;
+    const vec3 c_LightPos = vec3(10.0, 10.0, 10.0); //view space
+    uniform vec4 u_Color;
 
-        in vec3 v_Normal;
-        out vec4 o_Color;
+    in vec3 v_Normal;
+    out vec4 o_Color;
 
-        void main() {
-            vec3 N = normalize(v_Normal);
-            vec3 L = normalize(c_LightPos);
-            o_Color = u_Color * dot(N, L);
-        }
-    "),
-    glsl_120: None,
-    glsl_130: None,
-    glsl_140: None,
-    targets: &[],
-};
+    void main() {
+        vec3 N = normalize(v_Normal);
+        vec3 L = normalize(c_LightPos);
+        o_Color = u_Color * dot(N, L);
+    }
+";
 
 #[derive(Copy)]
 #[shader_param]
