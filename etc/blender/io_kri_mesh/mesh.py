@@ -119,9 +119,11 @@ def save_mesh(out, ob, log):
 	if ob.parent and ob.parent.type == 'ARMATURE':
 		arm = ob.parent.data
 	# steady...
-	out.begin('mesh')
 	(km, face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
+	if km == None:
+		return (None, [])
 	# go!
+	out.begin('mesh')
 	totalFm = ''.join(a.type for a in km.attribs)
 	assert len(totalFm) == 2*len(km.attribs)
 	stride = out.size_of(totalFm)
@@ -167,31 +169,31 @@ def save_mesh(out, ob, log):
 	return (km, face_num)
 
 
-def collect_attributes(mesh,armature,groups,no_output,log):
+def collect_attributes(mesh, armature, groups, no_output,log):
 	# 1: convert Mesh to Triangle Mesh
 	for layer in mesh.uv_textures:
 		if not len(layer.data):
 			log.log(1,'e','UV layer is locked by the user')
-			return None,None,0,0
+			return (None, [])
 	hasUv		= len(mesh.uv_textures)>0
 	hasTangent	= Settings.putTangent and hasUv
 	hasQuatUv	= Settings.putQuat and hasUv
 	hasQuat		= Settings.putQuat and (Settings.fakeQuat != 'Never' or hasUv)
 	ar_face = []
-	for i,face in enumerate(mesh.polygons):
-		uves,colors = [],[]
-		loop_end = face.loop_start+face.loop_total
+	for i, face in enumerate(mesh.polygons):
+		uves, colors = [], []
+		loop_end = face.loop_start + face.loop_total
 		for layer in mesh.uv_layers:
-			storage = layer.data[face.loop_start:loop_end]
+			storage = layer.data[face.loop_start : loop_end]
 			cur = tuple(mathutils.Vector(x.uv) for x in storage)
 			uves.append(cur)
 		for layer in mesh.vertex_colors:
-			storage = layer.data[face.loop_start:loop_end]
+			storage = layer.data[face.loop_start : loop_end]
 			cur = tuple(mathutils.Vector(x.color) for x in storage)
 			colors.append(cur)
-		if face.loop_total>=3:
+		if face.loop_total >= 3:
 			ar_face.append( Face(face, mesh, (0,1,2), uves,colors) )
-		if face.loop_total>=4:
+		if face.loop_total >= 4:
 			ar_face.append( Face(face, mesh, (0,2,3), uves,colors) )
 	#else: log.logu(1,'converted to tri-mesh')
 	if not 'ClearNonUV':
@@ -202,7 +204,7 @@ def collect_attributes(mesh,armature,groups,no_output,log):
 			log.log(1,'w','%d pure faces detected' % (n_bad_face))
 	if not len(ar_face):
 		log.log(1,'e','object has no faces')
-		return None,None,0,0
+		return (None, [])
 
 	# 1.5: face indices
 	ar_face.sort(key = lambda x: x.mat)

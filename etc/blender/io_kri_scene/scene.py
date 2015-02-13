@@ -270,7 +270,7 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 			else:
 				(_,face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
 			offset = 0
-			for fn,m in zip(face_num, ob.data.materials):
+			for fn, m in zip(face_num, ob.data.materials):
 				if not fn: break
 				s = (m.name	if m else '')
 				log.logu(1, '+entity: %d faces, [%s]' % (fn,s))
