@@ -77,6 +77,8 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
             projection: proj,
         }
     };
+    // read materials
+    
     // read entities
     let program = match context.device.link_program(
             program::VERTEX_SRC, program::FRAGMENT_SRC) {

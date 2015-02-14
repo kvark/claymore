@@ -8,6 +8,7 @@ extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate cgmath;
 extern crate gfx;
+extern crate image;
 
 pub mod draw;
 pub mod load;
