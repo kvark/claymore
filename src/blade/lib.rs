@@ -1,6 +1,6 @@
 #![crate_name = "blade"]
 #![crate_type = "lib"]
-#![feature(collections, core, io, plugin, path, rustc_private, std_misc, unsafe_destructor)]
+#![feature(collections, core, io, plugin, path, std_misc, unsafe_destructor)]
 #![plugin(gfx_macros)]
 
 #[macro_use]

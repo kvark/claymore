@@ -1,6 +1,7 @@
 #![crate_name = "claymore"]
 #![crate_type = "bin"]
 
+extern crate env_logger;
 extern crate blade;
 extern crate gfx;
 extern crate glfw;
@@ -9,6 +10,7 @@ use gfx::{Device, DeviceExt};
 use glfw::Context;
 
 fn main() {
+    env_logger::init().unwrap();
     println!("Initializing the window...");
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 

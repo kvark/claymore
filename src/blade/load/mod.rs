@@ -5,7 +5,7 @@ mod program;
 mod reflect;
 mod scene;
 
-use std::collections::HashMap;
+use std::collections::hash_map::{HashMap, Entry};
 use rustc_serialize::json;
 use std::old_io as io;
 use gfx;
@@ -21,6 +21,7 @@ pub type TextureError = String;
 pub struct Cache {
     meshes: HashMap<String, mesh::Success>,
     textures: HashMap<String, Result<gfx::TextureHandle, TextureError>>,
+    programs: HashMap<String, Result<gfx::ProgramHandle, program::Error>>,
 }
 
 impl Cache {
@@ -28,6 +29,7 @@ impl Cache {
         Cache {
             meshes: HashMap::new(),
             textures: HashMap::new(),
+            programs: HashMap::new(),
         }
     }
 }
@@ -37,7 +39,7 @@ pub struct Context<'a, D: 'a> {
     pub device: &'a mut D,
     pub prefix: String,
     pub texture_black: gfx::TextureHandle,
-    pub shader_phong: gfx::ProgramHandle,
+    pub sampler_point: gfx::SamplerHandle,
 }
 
 #[derive(Clone, Debug)]
@@ -48,7 +50,6 @@ pub enum ContextError {
 
 impl<'a, D: gfx::Device> Context<'a, D> {
     pub fn new(device: &'a mut D) -> Result<Context<'a, D>, ContextError> {
-        use gfx::DeviceExt;
         let tinfo = gfx::tex::TextureInfo {
             width: 1,
             height: 1,
@@ -65,24 +66,22 @@ impl<'a, D: gfx::Device> Context<'a, D> {
             },
             Err(e) => return Err(ContextError::Texture(e)),
         };
-        let program = match device.link_program(
-            program::VERTEX_SRC, program::FRAGMENT_SRC) {
-            Ok(p) => p,
-            Err(e) => return Err(ContextError::Program(e)),
-        };
-
+        let sampler = device.create_sampler(gfx::tex::SamplerInfo::new(
+            gfx::tex::FilterMethod::Scale,
+            gfx::tex::WrapMode::Tile
+        ));
         Ok(Context {
             cache: Cache::new(),
             device: device,
             prefix: String::new(),
             texture_black: texture,
-            shader_phong: program,
+            sampler_point: sampler,
         })
     }
 
     fn read_mesh_collection(&mut self, path_str: &str) -> Result<(), mesh::Error> {
         info!("Loading mesh collection from {}", path_str);
-        let path = Path::new(format!("{}/{}.k3mesh", self.prefix, path_str).as_slice());
+        let path = Path::new(format!("{}/{}.k3mesh", self.prefix, path_str));
         match io::File::open(&path) {
             Ok(file) => {
                 let size = file.stat().unwrap().size as u32;
@@ -117,16 +116,28 @@ impl<'a, D: gfx::Device> Context<'a, D> {
 
     pub fn request_texture(&mut self, path_str: &str)
                            -> Result<gfx::TextureHandle, TextureError> {
-        match self.cache.textures.get(path_str) {
-            Some(result) => return result.clone(),
-            None => (),
-        };
-        info!("Loading texture from {}", path_str);
-        let tex_maybe = gfx_texture::Texture::from_path(
-            self.device, &Path::new(path_str))
-            .map(|t| t.handle);
-        self.cache.textures.insert(path_str.to_string(), tex_maybe.clone());
-        tex_maybe
+        match self.cache.textures.entry(path_str.to_string()) {
+            Entry::Occupied(v) => v.get().clone(),
+            Entry::Vacant(v) => {
+                info!("Loading texture from {}", path_str);
+                let path = Path::new(format!("{}{}", self.prefix, path_str));
+                let tex_maybe = gfx_texture::Texture::from_path(self.device, &path)
+                    .map(|t| t.handle);
+                v.insert(tex_maybe).clone()
+            },
+        }
+    }
+
+    pub fn request_program(&mut self, name: &str)
+                           -> Result<gfx::ProgramHandle, program::Error> {
+        match self.cache.programs.entry(name.to_string()) {
+            Entry::Occupied(v) => v.get().clone(),
+            Entry::Vacant(v) => {
+                info!("Loading program {}", name);
+                let prog_maybe = program::load(name, self.device);
+                v.insert(prog_maybe).clone()
+            },
+        }
     }
 }
 
