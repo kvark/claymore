@@ -19,8 +19,11 @@ git = "https://github.com/gfx-rs/gfx-rs"
 git = "https://github.com/gfx-rs/gfx-rs"
 plugin = true
 
-[dependencies.image]
-git = "https://github.com/PistonDevelopers/image"
+[dependencies.piston-gfx_texture]
+git = "https://github.com/PistonDevelopers/gfx_texture"
+
+#[dependencies.image]
+#git = "https://github.com/PistonDevelopers/image"
 
 [dependencies]
 rustc-serialize = "*"

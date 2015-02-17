@@ -1,5 +1,6 @@
 pub mod chunk;
 mod mesh;
+mod mat;
 mod program;
 mod reflect;
 mod scene;
@@ -8,20 +9,14 @@ use std::collections::HashMap;
 use rustc_serialize::json;
 use std::old_io as io;
 use gfx;
-use image;
+use gfx_texture;
 
 
 pub static PREFIX_ATTRIB : &'static str = "a_";
 pub static PREFIX_UNIFORM: &'static str = "u_";
 pub static PREFIX_TEXTURE: &'static str = "t_";
 
-#[derive(Debug)]
-pub enum TextureError {
-    Image(image::ImageError),
-    Format,
-    Texture(gfx::tex::TextureError),
-    Upload(gfx::tex::TextureError),
-}
+pub type TextureError = String;
 
 pub struct Cache {
     meshes: HashMap<String, mesh::Success>,
@@ -41,15 +36,48 @@ pub struct Context<'a, D: 'a> {
     pub cache: Cache,
     pub device: &'a mut D,
     pub prefix: String,
+    pub texture_black: gfx::TextureHandle,
+    pub shader_phong: gfx::ProgramHandle,
+}
+
+#[derive(Clone, Debug)]
+pub enum ContextError {
+    Texture(gfx::tex::TextureError),
+    Program(gfx::ProgramError),
 }
 
 impl<'a, D: gfx::Device> Context<'a, D> {
-    pub fn new(device: &'a mut D) -> Context<'a, D> {
-        Context {
+    pub fn new(device: &'a mut D) -> Result<Context<'a, D>, ContextError> {
+        use gfx::DeviceExt;
+        let tinfo = gfx::tex::TextureInfo {
+            width: 1,
+            height: 1,
+            depth: 1,
+            levels: 1,
+            format: gfx::tex::RGBA8,
+            kind: gfx::tex::TextureKind::Texture2D,
+        };
+        let image_info = tinfo.to_image_info();
+        let texture = match device.create_texture(tinfo) {
+            Ok(t) => match device.update_texture(&t, &image_info, &[0u8, 0, 0, 0]) {
+                Ok(()) => t,
+                Err(e) => return Err(ContextError::Texture(e)),
+            },
+            Err(e) => return Err(ContextError::Texture(e)),
+        };
+        let program = match device.link_program(
+            program::VERTEX_SRC, program::FRAGMENT_SRC) {
+            Ok(p) => p,
+            Err(e) => return Err(ContextError::Program(e)),
+        };
+
+        Ok(Context {
             cache: Cache::new(),
             device: device,
             prefix: String::new(),
-        }
+            texture_black: texture,
+            shader_phong: program,
+        })
     }
 
     fn read_mesh_collection(&mut self, path_str: &str) -> Result<(), mesh::Error> {
@@ -87,54 +115,17 @@ impl<'a, D: gfx::Device> Context<'a, D> {
         }
     }
 
-    fn upload_texture<P: image::Pixel + 'static>(&mut self,
-                      buffer: image::ImageBuffer<P, Vec<u8>>,
-                      components: gfx::tex::Components)
-                      -> Result<gfx::TextureHandle, TextureError>
-                      where P::Subpixel: 'static {
-        let tex_info = gfx::tex::TextureInfo {
-            width: buffer.width() as u16,
-            height: buffer.height() as u16,
-            depth: 1,
-            levels: 99,
-            kind: gfx::tex::TextureKind::Texture2D,
-            format: gfx::tex::Format::Unsigned(components, 8,
-                gfx::attrib::IntSubType::Normalized),
-        };
-        let image_info = tex_info.to_image_info();
-        match self.device.create_texture(tex_info) {
-            Ok(handle) => {
-                match self.device.update_texture_raw(&handle, &image_info, buffer.as_slice()) {
-                    Ok(()) => {
-                        self.device.generate_mipmap(&handle);
-                        Ok(handle)
-                    },
-                    Err(e) => Err(TextureError::Upload(e)),
-                }
-            },
-            Err(e) => Err(TextureError::Texture(e)),
-        }
-    }
-
     pub fn request_texture(&mut self, path_str: &str)
                            -> Result<gfx::TextureHandle, TextureError> {
         match self.cache.textures.get(path_str) {
-            Some(result) => return *result,
+            Some(result) => return result.clone(),
             None => (),
         };
         info!("Loading texture from {}", path_str);
-        let tex_maybe = match image::open(&Path::new(path_str)) {
-            Ok(image::ImageLuma8(img)) =>
-                self.upload_texture(img, gfx::tex::Components::R),
-            //Ok(image::ImageLumaA8(ref img)) => {},
-            Ok(image::ImageRgb8(img)) =>
-                self.upload_texture(img, gfx::tex::Components::RGB),
-            Ok(image::ImageRgba8(img)) =>
-                self.upload_texture(img, gfx::tex::Components::RGBA),
-            Ok(_) => Err(TextureError::Format),
-            Err(e) => Err(TextureError::Image(e)),
-        };
-        self.cache.textures.insert(path_str.to_string(), tex_maybe);
+        let tex_maybe = gfx_texture::Texture::from_path(
+            self.device, &Path::new(path_str))
+            .map(|t| t.handle);
+        self.cache.textures.insert(path_str.to_string(), tex_maybe.clone());
         tex_maybe
     }
 }

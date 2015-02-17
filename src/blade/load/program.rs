@@ -34,7 +34,7 @@ pub static FRAGMENT_SRC: &'static [u8] = b"
     }
 ";
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 #[shader_param]
 pub struct Params {
     #[name = "u_Transform"]

@@ -18,6 +18,3 @@ git = "https://github.com/bjz/glfw-rs.git"
 
 [dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs.git"
-
-#[dependencies.gfx_gl]
-#git = "https://github.com/gfx-rs/gfx_gl.git"

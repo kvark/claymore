@@ -9,8 +9,8 @@ pub type Scalar = f32;
 pub enum Error {
     NoCamera,
     MissingNode(String),
-    Program(gfx::ProgramError),
     Mesh(String, super::mesh::Error),
+    Material(String, super::mat::Error),
     Batch(String, gfx::batch::BatchError),
 }
 
@@ -22,7 +22,7 @@ pub type SceneJson = (::scene::World<Scalar>,
 pub fn load<'a, D: gfx::Device>(raw: json::Scene,
             context: &mut super::Context<D>)
             -> Result<SceneJson, Error> {
-    use gfx::DeviceExt;
+    use std::collections::hash_map::{HashMap, Entry};
     fn read_space<S: cgmath::BaseFloat>(space: &json::Space<S>)
                   -> ::scene::Transform<S> {
         cgmath::Decomposed {
@@ -78,13 +78,8 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
         }
     };
     // read materials
-    
+    let mut material_map: HashMap<String, super::mat::Material> = HashMap::new();
     // read entities
-    let program = match context.device.link_program(
-            program::VERTEX_SRC, program::FRAGMENT_SRC) {
-        Ok(p) => p,
-        Err(e) => return Err(Error::Program(e)),
-    };
     let mut entities = Vec::new();
     let mut batch_con = gfx::batch::Context::new();
     for ent in raw.entities.iter() {
@@ -99,18 +94,25 @@ pub fn load<'a, D: gfx::Device>(raw: json::Scene,
         let (ra, rb) = ent.range;
         slice.start = ra as gfx::VertexCount;
         slice.end = rb as gfx::VertexCount;
-        let draw_state = gfx::DrawState::new().depth(
-            gfx::state::Comparison::LessEqual,
-            true
-        );
-        let batch = match batch_con.make_batch(&program, &mesh, slice, &draw_state) {
+        let material = match material_map.entry(ent.material.clone()) {
+            Entry::Occupied(m) => m.get().clone(),
+            Entry::Vacant(v) => match raw.materials.iter().find(|r| r.name == ent.material) {
+                Some(raw_mat) => match super::mat::load(&raw_mat, context) {
+                    Ok(m) => v.insert(m).clone(),
+                    Err(e) => return Err(Error::Material(ent.material.clone(), e)),
+                },
+                None => return Err(Error::Material(
+                    ent.material.clone(), super::mat::Error::NotFound)),
+            },
+        };
+        let batch = match batch_con.make_batch(&material.program, &mesh, slice, &material.state) {
             Ok(b) => b,
             Err(e) => return Err(Error::Batch(ent.mesh.clone(), e)),
         };
         entities.push(::scene::Entity {
             name: ent.mesh.clone(),
             batch: batch,
-            params: program::Params::new(),
+            params: material.data,
             node: node,
             skeleton: None, //TODO
         });

@@ -1,6 +1,6 @@
 #![crate_name = "blade"]
 #![crate_type = "lib"]
-#![feature(collections, core, io, plugin, path, rustc_private, unsafe_destructor)]
+#![feature(collections, core, io, plugin, path, rustc_private, std_misc, unsafe_destructor)]
 #![plugin(gfx_macros)]
 
 #[macro_use]
@@ -8,7 +8,7 @@ extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate cgmath;
 extern crate gfx;
-extern crate image;
+extern crate gfx_texture;
 
 pub mod draw;
 pub mod load;
