@@ -80,7 +80,7 @@ pub struct Texture {
     pub name: String,
     pub path: String,
     pub filter: u8,
-    pub wrap: i8,
+    pub wrap: (i8, i8, i8),
     pub offset: (Scalar, Scalar, Scalar),
     pub scale: (Scalar, Scalar, Scalar),
 }

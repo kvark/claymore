@@ -20,11 +20,13 @@ def cook_mat(mat,log):
 		if it.image == None:
 			log.log(2, 'w','Texture "%s": image is not assigned' % (it.name))
 			continue
+		wrap_x = ((0, 1)[it.repeat_x != 0], -1)[it.use_mirror_x]
+		wrap_y = ((0, 1)[it.repeat_y != 0], -1)[it.use_mirror_y]
 		textures.append({
 			'name'	: mt.name,
 			'path'	: it.image.filepath,
 			'filter': (1, (2, 3)[it.use_mipmap])[it.use_interpolation],
-			'wrap'	: 0,
+			'wrap'	: (wrap_x, wrap_y, 0),
 			'scale'	: list(mt.scale),
 			'offset': list(mt.offset),
 		})

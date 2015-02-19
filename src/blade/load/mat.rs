@@ -15,7 +15,7 @@ pub enum Error {
     Program(String, super::program::Error),
     Texture(String, super::TextureError),
     SamplerFilter(String, u8),
-    SamplerWrap(String, i8),
+    SamplerWrap(i8),
 }
 
 pub fn load<D: gfx::Device>(mat: &reflect::Material,
@@ -38,20 +38,29 @@ pub fn load<D: gfx::Device>(mat: &reflect::Material,
     match mat.textures.first() {
         Some(ref rt) => match context.request_texture(rt.path.as_slice()) {
             Ok(t) => {
-                let sampler = context.device.create_sampler(gfx::tex::SamplerInfo::new(
-                    match rt.filter {
-                        1 => gfx::tex::FilterMethod::Scale,
-                        2 => gfx::tex::FilterMethod::Bilinear,
-                        3 => gfx::tex::FilterMethod::Trilinear,
-                        other => return Err(Error::SamplerFilter(rt.name.clone(), other)),
-                    },
-                    match rt.wrap {
-                        -1 => gfx::tex::WrapMode::Mirror,
-                        0 => gfx::tex::WrapMode::Clamp,
-                        1 => gfx::tex::WrapMode::Tile,
-                        other => return Err(Error::SamplerWrap(rt.name.clone(), other)),
-                    },
-                ));
+                fn unwrap(mode: i8) -> Result<gfx::tex::WrapMode, Error> {
+                    match mode {
+                        -1 => Ok(gfx::tex::WrapMode::Mirror),
+                        0 => Ok(gfx::tex::WrapMode::Clamp),
+                        1 => Ok(gfx::tex::WrapMode::Tile),
+                        _ => Err(Error::SamplerWrap(mode)),
+                    }
+                }
+                let (wx, wy, wz) = (
+                    try!(unwrap(rt.wrap.0)),
+                    try!(unwrap(rt.wrap.1)),
+                    try!(unwrap(rt.wrap.2)),
+                );
+                let filter = match rt.filter {
+                    1 => gfx::tex::FilterMethod::Scale,
+                    2 => gfx::tex::FilterMethod::Bilinear,
+                    3 => gfx::tex::FilterMethod::Trilinear,
+                    other => return Err(Error::SamplerFilter(rt.name.clone(), other)),
+                };
+                let mut sinfo = gfx::tex::SamplerInfo::new(filter, wx);
+                sinfo.wrap_mode.1 = wy;
+                sinfo.wrap_mode.2 = wz;
+                let sampler = context.device.create_sampler(sinfo);
                 data.texture = (t, Some(sampler));
             },
             Err(e) => return Err(Error::Texture(rt.path.clone(), e)),
