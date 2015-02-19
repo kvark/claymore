@@ -9,8 +9,8 @@ class Settings:
 	putTangent	= False
 	putQuat		= False
 	putUv		= True
-	normUv		= True
 	putColor	= True
+	compressUv	= True
 	doQuatInt	= False
 	fakeQuat	= 'Auto'
 	logInfo		= True

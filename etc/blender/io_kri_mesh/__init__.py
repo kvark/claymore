@@ -1,17 +1,17 @@
 # <pep8 compliant>
 
 bl_info = {
-    'name': 'KRI Mesh format ',
-    'author': 'Dzmitry Malyshau',
-    'version': (0, 1, 0),
-    'blender': (2, 6, 2),
-    'api': 36079,
-    'location': 'File > Export > Kri Mesh (.k3mesh)',
-    'description': 'Export selected mesh into KRI.',
-    'warning': '',
-    'wiki_url': 'http://code.google.com/p/kri/wiki/Exporter',
-    'tracker_url': '',
-    'category': 'Import-Export'}
+	'name': 'KRI Mesh format ',
+	'author': 'Dzmitry Malyshau',
+	'version': (0, 1, 0),
+	'blender': (2, 6, 2),
+	'api': 36079,
+	'location': 'File > Export > Kri Mesh (.k3mesh)',
+	'description': 'Export selected mesh into KRI.',
+	'warning': '',
+	'wiki_url': 'http://code.google.com/p/kri/wiki/Exporter',
+	'tracker_url': '',
+	'category': 'Import-Export'}
 
 extension = '.k3mesh'
 
@@ -19,7 +19,7 @@ extension = '.k3mesh'
 if 'bpy' in locals():
 	import imp
 	if 'export_kri_mesh' in locals():
-	        imp.reload(export_kri_mesh)
+			imp.reload(export_kri_mesh)
 
 
 import bpy
@@ -59,12 +59,12 @@ class ExportMesh( bpy.types.Operator, ExportHelper ):
 	put_uv		= BoolProperty( name='Put UV layers',
 		description='Export vertex UVs',
 		default=Settings.putUv )
-	norm_uv		= BoolProperty( name='Assume UV in range [0,1]',
-		description='Assume UV layers are normalized. That allows using fixed-point data representation',
-		default=Settings.normUv )
 	put_color	= BoolProperty( name='Put color layers',
 		description='Export vertex colors',
 		default=Settings.putColor )
+	compress_uv = BoolProperty( name='Compress UV',
+		description='Use compact representation of texture coordinates, if possible',
+		default=Settings.compressUv )
 	quat_fake	= EnumProperty( name='Fake quaternions',
 		description='Derive quaternions from normals only',
 		items=(
@@ -84,8 +84,8 @@ class ExportMesh( bpy.types.Operator, ExportHelper ):
 		Settings.putTangent	= self.properties.put_tangent
 		Settings.putQuat	= self.properties.put_quat
 		Settings.putUv		= self.properties.put_uv
-		Settings.normUv		= self.properties.norm_uv
 		Settings.putColor	= self.properties.put_color
+		Settings.compressUv	= self.properties.compress_uv
 		Settings.doQuatInt	= self.properties.quat_int
 		Settings.fakeQuat	= self.properties.quat_fake
 		obj = None

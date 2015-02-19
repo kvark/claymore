@@ -1,26 +1,26 @@
 # <pep8 compliant>
 
 bl_info = {
-    'name': 'KRI scene',
-    'author': 'Dzmitry Malyshau',
-    'version': (0, 1, 0),
-    'blender': (2, 6, 2),
-    'api': 36079,
-    'location': 'File > Export > Blade Scene',
-    'description': 'Export the scene to Blade engine (.json,.k3arm,.k3mesh)',
-    'warning': '',
-    'tracker_url': '',
-    'category': 'Import-Export'}
+	'name': 'KRI scene',
+	'author': 'Dzmitry Malyshau',
+	'version': (0, 1, 0),
+	'blender': (2, 6, 2),
+	'api': 36079,
+	'location': 'File > Export > Blade Scene',
+	'description': 'Export the scene to Blade engine (.json,.k3arm,.k3mesh)',
+	'warning': '',
+	'tracker_url': '',
+	'category': 'Import-Export'}
 
 # To support reload properly, try to access a package var, if it's there, reload everything
 if 'bpy' in locals():
 	import imp
 	if 'export_kri_scene' in locals():
-	    imp.reload(export_kri_scene)
+		imp.reload(export_kri_scene)
 
 
 import bpy
-from bpy.props	         import *
+from bpy.props			 import *
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from io_kri.common	 	 import Settings
 from io_kri_scene.scene	 import save_scene
@@ -68,12 +68,12 @@ class ExportScene( bpy.types.Operator, ExportHelper ):
 	put_uv		= BoolProperty( name='Put UV layers',
 		description='Export vertex UVs',
 		default=Settings.putUv )
-	norm_uv		= BoolProperty( name='Assume UV in range [0,1]',
-		description='Assume UV layers are normalized. That allows using fixed-point data representation',
-		default=Settings.normUv )
 	put_color	= BoolProperty( name='Put color layers',
 		description='Export vertex colors',
 		default=Settings.putColor )
+	compress_uv = BoolProperty( name='Compress UV',
+		description='Use compact representation of texture coordinates, if possible',
+		default=Settings.compressUv )
 	quat_fake	= EnumProperty( name='Fake quaternions',
 		description='Derive quaternions from normals only',
 		items=(
@@ -93,8 +93,8 @@ class ExportScene( bpy.types.Operator, ExportHelper ):
 		Settings.putTangent	= self.properties.put_tangent
 		Settings.putQuat	= self.properties.put_quat
 		Settings.putUv		= self.properties.put_uv
-		Settings.normUv		= self.properties.norm_uv
 		Settings.putColor	= self.properties.put_color
+		Settings.compressUv	= self.properties.compress_uv
 		Settings.doQuatInt	= self.properties.quat_int
 		Settings.fakeQuat	= self.properties.quat_fake
 		save_scene( self.properties.filepath, context,

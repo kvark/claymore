@@ -32,7 +32,7 @@ def calc_quat(normal):
 		d = math.sqrt(2.0 - 2.0*normal.z)
 		return mathutils.Quaternion(( normal.x/d, 0.0, 0.5*d, normal.y/d ))
 
-def fix_convert(type,valist):
+def fix_convert(type, valist):
 	typeScale = {
 		'B': 0xFF,
 		'H': 0xFFFF,
@@ -95,6 +95,10 @@ class Face:
 ###  MESH   ###
 
 class Attribute:
+	# fixed enumerant:
+	# 0: not fixed, leave as is (e.g. positions)
+	# 1: fixed, already converted (e.g. bone weights)
+	# 2: fixed, needs conversion (e.g. normals)
 	__slots__ = 'name', 'type', 'fixed', 'data', 'interpolate'
 	def __init__(self, name, type, fixed=0):
 		self.name = name
@@ -168,6 +172,11 @@ def save_mesh(out, ob, log):
 	out.end()	#mesh
 	return (km, face_num)
 
+def compute_bounds_2d(vectors):
+	x, y = zip(*vectors)
+	vmin = (min(x), min(y))
+	vmax = (max(x), max(y))
+	return (vmin, vmax)
 
 def collect_attributes(mesh, armature, groups, no_output,log):
 	# 1: convert Mesh to Triangle Mesh
@@ -401,13 +410,17 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 	if Settings.putUv:
 		all = mesh.uv_textures
 		log.log(1,'i', 'UV layers: %d' % (len(all)))
-		for i,layer in enumerate(all):
+		for i, layer in enumerate(all):
 			name = 'Tex%d' % i
-			vat = None
-			if Settings.normUv:
-				vat = Attribute(name, '2H', 2)
-			else:
-				vat = Attribute(name, '2f', 0)
+			vat = Attribute(name, '2f', 0)
+			if Settings.compressUv:
+				vmin, vmax = compute_bounds_2d(v.tex[i] for v in ar_vert)
+				lo, hi, threshold = min(vmin), max(vmax), 0.01
+				if lo > -threshold and hi < 1.0 + threshold:
+					vat = Attribute(name, '2H', 2)
+				elif lo > -1-threshold and hi < 1.0 + threshold:
+					vat = Attribute(name, '2h', 2)
+				log.log(2,'i', 'UV[%d] bounds: [%.1f,%.1f], format: %s' % (i, lo, hi, vat.type))
 			km.attribs.append(vat)
 			for v in ar_vert:
 				assert i<len(v.tex)
