@@ -1,12 +1,10 @@
-#![crate_name = "claymore"]
-#![crate_type = "bin"]
-
 extern crate env_logger;
-extern crate blade;
+extern crate "claymore-load" as load;
+extern crate scene;
 extern crate gfx;
 extern crate glfw;
 
-use gfx::{Device, DeviceExt};
+use gfx::traits::*;
 use glfw::Context;
 
 fn main() {
@@ -35,7 +33,7 @@ fn main() {
     println!("Loading the test scene...");
     let (mut world, mut scene) = {
         let mut context = blade::load::Context::new(&mut device).unwrap();
-        blade::load::scene("data/vika", &mut context).unwrap()
+        load::scene("data/vika", &mut context).unwrap()
     };
     scene.camera.projection.aspect = w as f32 / h as f32;
 
@@ -58,12 +56,13 @@ fn main() {
             depth: 1.0,
             stencil: 0,
         };
+        renderer.reset();
         renderer.clear(clear_data, gfx::COLOR | gfx::DEPTH, &frame);
         scene.draw(&mut renderer, &frame);
 
         device.submit(renderer.as_buffer());
-        renderer.reset();
         window.swap_buffers();
+        device.after_frame();
     }
     println!("Done.");
 }

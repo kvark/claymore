@@ -13,8 +13,11 @@ path = "src/main.rs"
 [dependencies]
 env_logger = "*"
 
-[dependencies.blade]
-path = "src/blade/"
+[dependencies.claymore-scene]
+path = "src/scene/"
+
+[dependencies.claymore-load]
+path = "src/load/"
 
 [dependencies.glfw]
 git = "https://github.com/bjz/glfw-rs.git"

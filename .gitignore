@@ -1,4 +1,9 @@
+# Data
 data/
+
+# Executables
 target/
+
+# Caches
 /Cargo.lock
 __pycache__

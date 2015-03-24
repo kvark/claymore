@@ -1,0 +1,10 @@
+[package]
+name = "claymore-load"
+version = "0.0.1"
+authors = [
+"Dzmitry Malyshau <kvarkus@gmail.com>",
+]
+
+[lib]
+name = "claymore-load"
+path = "lib.rs"

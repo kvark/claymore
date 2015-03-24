@@ -1,12 +1,12 @@
 [package]
-name = "blade"
-version = "0.1.0"
+name = "claymore-scene"
+version = "0.0.1"
 authors = [
 "Dzmitry Malyshau <kvarkus@gmail.com>",
 ]
 
 [lib]
-name = "blade"
+name = "claymore-scene"
 path = "lib.rs"
 
 [dependencies.cgmath]
@@ -16,7 +16,7 @@ git = "https://github.com/bjz/cgmath-rs"
 git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.gfx_macros]
-git = "https://github.com/gfx-rs/gfx-rs"
+git = "https://github.com/gfx-rs/gfx_macros"
 plugin = true
 
 [dependencies.piston-gfx_texture]
