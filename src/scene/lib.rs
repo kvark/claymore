@@ -1,3 +1,5 @@
+#![feature(custom_attribute)]
+
 #[macro_use]
 extern crate log;
 extern crate id;
@@ -7,6 +9,7 @@ extern crate gfx_phase;
 extern crate gfx_scene;
 
 pub mod space;
+pub mod tech;
 
 
 pub type Transform<S> = cgmath::Decomposed<
@@ -38,9 +41,9 @@ impl<S: cgmath::BaseFloat + 'static> gfx_scene::ViewInfo<S, Transform<S>> for Vi
 }
 
 
-pub type World<S> = ::space::World<S, Transform<S>>;
-pub type Node<S> = ::space::Node<Transform<S>>;
-pub type Skeleton<S> = ::space::Skeleton<Transform<S>>;
+pub type World<S> = space::World<S, Transform<S>>;
+pub type Node<S> = space::Node<Transform<S>>;
+pub type Skeleton<S> = space::Skeleton<Transform<S>>;
 pub type Scene<R, M, S> = gfx_scene::Scene<
     R, M,
     World<S>,

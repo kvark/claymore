@@ -1,13 +1,6 @@
 use gfx;
-//use gfx_texture;
+//use gfx_texture; //TODO
 use super::reflect;
-
-#[derive(Clone)]
-pub struct Material<R: gfx::Resources> {
-    pub program: gfx::ProgramHandle<R>,
-    pub state: gfx::DrawState,
-    pub data: super::program::Params<R>,
-}
 
 #[derive(Debug)]
 pub enum Error {

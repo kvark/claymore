@@ -3,19 +3,6 @@ use std::old_path::Path;
 use gfx;
 use gfx::traits::*;
 
-#[derive(Clone)]
-#[shader_param]
-pub struct Params<R: gfx::Resources> {
-    #[name = "u_Transform"]
-    pub mvp: [[f32; 4]; 4],
-    #[name = "u_NormalRotation"]
-    pub normal: [[f32; 3]; 3],
-    #[name = "u_Color"]
-    pub color: [f32; 4],
-    #[name = "t_Diffuse"]
-    pub texture: gfx::shade::TextureParam<R>,
-}
-
 #[derive(Clone, Debug)]
 pub enum Error {
     Read(Path, io::IoError),

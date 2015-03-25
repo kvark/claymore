@@ -1,4 +1,4 @@
-#![feature(collections, core, custom_attribute, old_io, old_path, plugin, std_misc, unsafe_destructor)]
+#![feature(collections, core, old_io, old_path, plugin, std_misc, unsafe_destructor)]
 #![plugin(gfx_macros)]
 
 #[macro_use]
