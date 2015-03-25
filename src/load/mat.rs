@@ -1,11 +1,12 @@
 use gfx;
 //use gfx_texture; //TODO
+use claymore_scene::tech::{Material, Shader};
 use super::reflect;
 
 #[derive(Debug)]
 pub enum Error {
     NotFound,
-    Program(String, super::program::Error),
+    Program(String),
     Texture(String, super::TextureError),
     SamplerFilter(String, u8),
     SamplerWrap(i8),
@@ -13,17 +14,11 @@ pub enum Error {
 
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
             context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
-    let program = match context.request_program(mat.shader.as_slice()) {
-        Ok(p) => p.clone(),
-        Err(e) => return Err(Error::Program(mat.shader.clone(), e)),
-    };
-    let state = gfx::DrawState::new().depth(
-        gfx::state::Comparison::LessEqual,
-        true
-    );
-    let mut data = super::program::Params {
-        mvp: [[0.0; 4]; 4],
-        normal: [[0.0; 3]; 3],
+    let mut out = Material {
+        shader: match mat.shader.as_slice() {
+            "PHONG" => Shader::Phong,
+            _ => return Err(Error::Program(mat.shader.clone())),
+        },
         color: [1.0, 1.0, 1.0, 1.0],
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
     };
@@ -53,7 +48,7 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
                 sinfo.wrap_mode.1 = wy;
                 sinfo.wrap_mode.2 = wz;
                 let sampler = context.factory.create_sampler(sinfo);
-                data.texture = (t, Some(sampler));
+                out.texture = (t, Some(sampler));
             },
             Err(e) => return Err(Error::Texture(rt.path.clone(), e)),
         },
@@ -61,13 +56,9 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
     };
     match mat.data.get("DiffuseColor") {
         Some(&(_, ref vec)) => {
-            data.color = [vec[0], vec[1], vec[2], 1.0];
+            out.color = [vec[0], vec[1], vec[2], 1.0];
         },
         None => (),
     }
-    Ok(Material {
-        program: program,
-        state: state,
-        data: data,
-    })
+    Ok(out)
 }

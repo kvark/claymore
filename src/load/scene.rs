@@ -12,12 +12,11 @@ pub enum Error {
     MissingNode(String),
     Mesh(String, super::mesh::Error),
     Material(String, super::mat::Error),
-    //Batch(String, gfx::batch::Error),
 }
 
 pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             raw: json::Scene, context: &mut super::Context<R, F>)
-            -> Result<cs::Scene<R, ::mat::Material<R>, Scalar>, Error> {
+            -> Result<cs::Scene<R, Scalar>, Error> {
     use std::collections::hash_map::{HashMap, Entry};
     fn read_space<S: cgmath::BaseFloat>(space: &json::Space<S>)
                   -> cs::Transform<S> {
@@ -74,7 +73,7 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         }
     };
     // read materials
-    let mut material_map: HashMap<String, super::mat::Material<R>> = HashMap::new();
+    let mut material_map: HashMap<String, cs::tech::Material<R>> = HashMap::new();
     // read entities
     let mut scene = gfx_scene::Scene::new(world);
     scene.cameras.push(camera);

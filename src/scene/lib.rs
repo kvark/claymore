@@ -1,4 +1,5 @@
-#![feature(custom_attribute)]
+#![feature(custom_attribute, plugin)]
+#![plugin(gfx_macros)]
 
 #[macro_use]
 extern crate log;
@@ -18,6 +19,7 @@ pub type Transform<S> = cgmath::Decomposed<
     cgmath::Quaternion<S>
 >;
 
+#[derive(Copy)]
 pub struct ViewInfo<S> {
     pub mx_vertex: cgmath::Matrix4<S>,
     pub mx_normal: cgmath::Matrix3<S>,
@@ -44,8 +46,8 @@ impl<S: cgmath::BaseFloat + 'static> gfx_scene::ViewInfo<S, Transform<S>> for Vi
 pub type World<S> = space::World<S, Transform<S>>;
 pub type Node<S> = space::Node<Transform<S>>;
 pub type Skeleton<S> = space::Skeleton<Transform<S>>;
-pub type Scene<R, M, S> = gfx_scene::Scene<
-    R, M,
+pub type Scene<R, S> = gfx_scene::Scene<R,
+    tech::Material<R>,
     World<S>,
     cgmath::Aabb3<S>,
     cgmath::PerspectiveFov<S, cgmath::Rad<S>>,

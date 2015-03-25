@@ -1,5 +1,4 @@
-#![feature(collections, core, old_io, old_path, plugin, std_misc, unsafe_destructor)]
-#![plugin(gfx_macros)]
+#![feature(collections, core, old_io, old_path, std_misc, unsafe_destructor)]
 
 #[macro_use]
 extern crate log;
@@ -160,7 +159,7 @@ pub enum SceneError {
 
 pub fn scene<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str,
              context: &mut Context<'a, R, F>)
-             -> Result<claymore_scene::Scene<R, mat::Material<R>, scene::Scalar>, SceneError> {
+             -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError> {
     use std::old_io::Reader;
     info!("Loading scene from {}", path_str);
     context.prefix = path_str.to_string();
