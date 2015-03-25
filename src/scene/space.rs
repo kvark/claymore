@@ -1,5 +1,7 @@
+use std::marker::PhantomData;
 use cgmath::{BaseFloat, Transform, Transform3};
-use Id;
+use id::{Array, Id};
+use gfx_scene;
 
 #[derive(Copy)]
 pub enum Parent<T> {
@@ -27,52 +29,50 @@ pub struct Bone<T> {
 pub struct Skeleton<T> {
     pub name: String,
     node: Id<Node<T>>,
-    bones: Vec<Bone<T>>,
+    bones: Array<Bone<T>>,
 }
 
 pub struct World<S, T> {
-    nodes: Vec<Node<T>>,
-    skeletons: Vec<Skeleton<T>>,
+    nodes: Array<Node<T>>,
+    skeletons: Array<Skeleton<T>>,
+    phantom: PhantomData<S>,
 }
 
 impl<S: BaseFloat, T: Transform3<S> + Clone> World<S, T> {
     pub fn new() -> World<S, T> {
         World {
-            nodes: Vec::new(),
-            skeletons: Vec::new(),
+            nodes: Array::new(),
+            skeletons: Array::new(),
+            phantom: PhantomData,
         }
     }
 
     pub fn get_node(&self, id: Id<Node<T>>) -> &Node<T> {
-        let Id(nid) = id;
-        self.nodes.get(nid).unwrap()
+        self.nodes.get(id)
     }
 
     pub fn mut_node(&mut self, id: Id<Node<T>>) -> &mut Node<T> {
-        let Id(nid) = id;
-        self.nodes.get_mut(nid).unwrap()
+        self.nodes.get_mut(id)
     }
 
     pub fn find_node(&self, name: &str) -> Option<Id<Node<T>>> {
-        self.nodes.iter().position(|n| n.name == name)
-                         .map(|i| Id(i))
+        self.nodes.find_id(|n| n.name == name)
     }
 
     pub fn add_node(&mut self, name: String, parent: Parent<T>, local: T)
                     -> Id<Node<T>> {
         //TODO: check that parent is valid
-        let nid = Id(self.nodes.len());
-        self.nodes.push(Node {
+        self.nodes.add(Node {
             name: name,
             parent: parent,
             local: local,
             world: Transform::identity(),
-        });
-        nid
+        })
     }
 
     pub fn update(&mut self) {
-        for i in 0.. self.nodes.len() {
+        //TODO: need direct access to Array
+        /*for i in 0.. self.nodes.len() {
             let (left, right) = self.nodes.split_at_mut(i);
             let n = &mut right[0];
             n.world = match n.parent {
@@ -104,6 +104,17 @@ impl<S: BaseFloat, T: Transform3<S> + Clone> World<S, T> {
                 };
                 b.world = base.concat(&b.local);
             }
-        }
+        }*/
+    }
+}
+
+impl<S: BaseFloat + 'static, T: Transform3<S> + Clone> gfx_scene::World for World<S, T> {
+    type Scalar = S;
+    type Transform = T;
+    type NodePtr = Id<Node<T>>;
+    type SkeletonPtr = Id<Skeleton<T>>;
+
+    fn get_transform(&self, id: &Id<Node<T>>) -> T {
+        self.get_node(*id).world.clone()
     }
 }

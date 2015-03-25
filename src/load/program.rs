@@ -1,11 +1,11 @@
 use std::old_io as io;
-use cgmath;
+use std::old_path::Path;
 use gfx;
-use super::scene::Scalar;
+use gfx::traits::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[shader_param]
-pub struct Params {
+pub struct Params<R: gfx::Resources> {
     #[name = "u_Transform"]
     pub mvp: [[f32; 4]; 4],
     #[name = "u_NormalRotation"]
@@ -13,18 +13,7 @@ pub struct Params {
     #[name = "u_Color"]
     pub color: [f32; 4],
     #[name = "t_Diffuse"]
-    pub texture: gfx::shade::TextureParam,
-}
-
-impl ::scene::ShaderParam<Scalar> for Params {
-    fn set_transform(&mut self,
-                     camera: &cgmath::Matrix4<Scalar>,
-                     model: &cgmath::Matrix4<Scalar>,
-                     view: &::scene::Transform<Scalar>) {
-        use cgmath::{Matrix, ToMatrix3, FixedArray};
-        self.mvp = camera.mul_m(model).into_fixed();
-        self.normal = view.rot.to_matrix3().into_fixed();
-    }
+    pub texture: gfx::shade::TextureParam<R>,
 }
 
 #[derive(Clone, Debug)]
@@ -33,9 +22,9 @@ pub enum Error {
     Create(gfx::ProgramError),
 }
 
-pub fn load<D: gfx::Device>(name: &str, device: &mut D)
-    -> Result<gfx::ProgramHandle, Error> {
-    use gfx::DeviceExt;
+pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(name: &str, factory: &mut F)
+    -> Result<gfx::ProgramHandle<R>, Error> {
+    use std::old_io::Reader;
     let src_vert = {
         let path = Path::new(format!("shader/{}.glslv", name));
         match io::File::open(&path).read_to_end() {
@@ -50,6 +39,6 @@ pub fn load<D: gfx::Device>(name: &str, device: &mut D)
             Err(e) => return Err(Error::Read(path, e)),
         }
     };
-    device.link_program(src_vert.as_slice(), src_frag.as_slice())
-          .map_err(|e| Error::Create(e))
+    factory.link_program(src_vert.as_slice(), src_frag.as_slice())
+           .map_err(|e| Error::Create(e))
 }

@@ -1,55 +1,51 @@
 extern crate env_logger;
-extern crate "claymore-load" as load;
-extern crate scene;
+extern crate glutin;
 extern crate gfx;
-extern crate glfw;
-
-use gfx::traits::*;
-use glfw::Context;
+extern crate gfx_phase;
+extern crate gfx_device_gl;
+extern crate "claymore-load" as load;
+extern crate "claymore-scene" as scene;
 
 fn main() {
+    use gfx::traits::*;
+
     env_logger::init().unwrap();
     println!("Initializing the window...");
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-    glfw.window_hint(glfw::WindowHint::ContextVersion(3, 2));
-    glfw.window_hint(glfw::WindowHint::OpenglForwardCompat(true));
-    glfw.window_hint(glfw::WindowHint::OpenglProfile(glfw::OpenGlProfileHint::Core));
+    let window = glutin::WindowBuilder::new().with_vsync().build().unwrap();
+    window.set_title("Claymore");
+    unsafe { window.make_current() };
+    let device = gfx_device_gl::GlDevice::new(|s| window.get_proc_address(s));
 
-    let (mut window, events) = glfw
-        .create_window(640, 480, "Claymore", glfw::WindowMode::Windowed)
-        .unwrap();
-
-    window.make_current();
-    glfw.set_error_callback(glfw::FAIL_ON_ERRORS);
-    window.set_key_polling(true);
-
-    let (w, h) = window.get_framebuffer_size();
+    let (w, h) = window.get_inner_size().unwrap();
     let frame = gfx::Frame::new(w as u16, h as u16);
 
-    let mut device = gfx::GlDevice::new(|s| window.get_proc_address(s));
     let mut renderer = device.create_renderer();
+    let mut phase = gfx_phase::Phase::new_cached(
+        "Main",
+        scene::Technique::new(&mut device)
+    );
 
     println!("Loading the test scene...");
-    let (mut world, mut scene) = {
-        let mut context = blade::load::Context::new(&mut device).unwrap();
+    let mut scene = {
+        let mut context = load::Context::new(&mut device).unwrap();
         load::scene("data/vika", &mut context).unwrap()
     };
-    scene.camera.projection.aspect = w as f32 / h as f32;
+    let mut camera = scene.cameras[0].clone();
+    camera.projection.aspect = w as f32 / h as f32;
 
     println!("Rendering...");
-    while !window.should_close() {
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
+    'main: loop {
+        // quit when Esc is pressed.
+        for event in window.poll_events() {
             match event {
-                glfw::WindowEvent::Key(glfw::Key::Escape, _, glfw::Action::Press, _) =>
-                window.set_should_close(true),
+                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'main,
+                glutin::Event::Closed => break 'main,
                 _ => {},
             }
         }
 
-        world.update();
-        scene.update(&world);
+        scene.world.update();
 
         let clear_data = gfx::ClearData {
             color: [0.2, 0.3, 0.4, 1.0],
@@ -58,7 +54,7 @@ fn main() {
         };
         renderer.reset();
         renderer.clear(clear_data, gfx::COLOR | gfx::DEPTH, &frame);
-        scene.draw(&mut renderer, &frame);
+        scene.draw(&mut phase, &camera, &frame, &mut renderer);
 
         device.submit(renderer.as_buffer());
         window.swap_buffers();

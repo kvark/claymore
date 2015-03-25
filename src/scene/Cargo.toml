@@ -9,22 +9,20 @@ authors = [
 name = "claymore-scene"
 path = "lib.rs"
 
+[dependencies.id]
+git = "https://github.com/kvark/simplecs"
+
 [dependencies.cgmath]
 git = "https://github.com/bjz/cgmath-rs"
 
 [dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs"
 
-[dependencies.gfx_macros]
-git = "https://github.com/gfx-rs/gfx_macros"
-plugin = true
+[dependencies.gfx_phase]
+git = "https://github.com/kvark/gfx_scene"
 
-[dependencies.piston-gfx_texture]
-git = "https://github.com/PistonDevelopers/gfx_texture"
+[dependencies.gfx_scene]
+git = "https://github.com/kvark/gfx_scene"
 
 #[dependencies.image]
 #git = "https://github.com/PistonDevelopers/image"
-
-[dependencies]
-log = "*"
-rustc-serialize = "*"

@@ -3,10 +3,10 @@ use gfx;
 use super::reflect;
 
 #[derive(Clone)]
-pub struct Material {
-    pub program: gfx::ProgramHandle,
+pub struct Material<R: gfx::Resources> {
+    pub program: gfx::ProgramHandle<R>,
     pub state: gfx::DrawState,
-    pub data: super::program::Params,
+    pub data: super::program::Params<R>,
 }
 
 #[derive(Debug)]
@@ -18,9 +18,8 @@ pub enum Error {
     SamplerWrap(i8),
 }
 
-pub fn load<D: gfx::Device>(mat: &reflect::Material,
-            context: &mut super::Context<D>)
-            -> Result<Material, Error> {
+pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
+            context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
     let program = match context.request_program(mat.shader.as_slice()) {
         Ok(p) => p.clone(),
         Err(e) => return Err(Error::Program(mat.shader.clone(), e)),
@@ -33,7 +32,7 @@ pub fn load<D: gfx::Device>(mat: &reflect::Material,
         mvp: [[0.0; 4]; 4],
         normal: [[0.0; 3]; 3],
         color: [1.0, 1.0, 1.0, 1.0],
-        texture: (context.texture_black, Some(context.sampler_point)),
+        texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
     };
     match mat.textures.first() {
         Some(ref rt) => match context.request_texture(rt.path.as_slice()) {
@@ -60,7 +59,7 @@ pub fn load<D: gfx::Device>(mat: &reflect::Material,
                 let mut sinfo = gfx::tex::SamplerInfo::new(filter, wx);
                 sinfo.wrap_mode.1 = wy;
                 sinfo.wrap_mode.2 = wz;
-                let sampler = context.device.create_sampler(sinfo);
+                let sampler = context.factory.create_sampler(sinfo);
                 data.texture = (t, Some(sampler));
             },
             Err(e) => return Err(Error::Texture(rt.path.clone(), e)),

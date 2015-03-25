@@ -1,3 +1,15 @@
+#![feature(collections, core, custom_attribute, old_io, old_path, plugin, std_misc, unsafe_destructor)]
+#![plugin(gfx_macros)]
+
+#[macro_use]
+extern crate log;
+extern crate "rustc-serialize" as rustc_serialize;
+extern crate cgmath;
+extern crate gfx;
+extern crate gfx_texture;
+extern crate gfx_scene;
+extern crate "claymore-scene" as claymore_scene;
+
 pub mod chunk;
 mod mesh;
 mod mat;
@@ -6,11 +18,9 @@ mod reflect;
 mod scene;
 
 use std::collections::hash_map::{HashMap, Entry};
+use std::old_path::Path;
 use rustc_serialize::json;
 use std::old_io as io;
-use gfx;
-use gfx_texture;
-
 
 pub static PREFIX_ATTRIB : &'static str = "a_";
 pub static PREFIX_UNIFORM: &'static str = "u_";
@@ -18,14 +28,14 @@ pub static PREFIX_TEXTURE: &'static str = "t_";
 
 pub type TextureError = String;
 
-pub struct Cache {
-    meshes: HashMap<String, mesh::Success>,
-    textures: HashMap<String, Result<gfx::TextureHandle, TextureError>>,
-    programs: HashMap<String, Result<gfx::ProgramHandle, program::Error>>,
+pub struct Cache<R: gfx::Resources> {
+    meshes: HashMap<String, mesh::Success<R>>,
+    textures: HashMap<String, Result<gfx::TextureHandle<R>, TextureError>>,
+    programs: HashMap<String, Result<gfx::ProgramHandle<R>, program::Error>>,
 }
 
-impl Cache {
-    pub fn new() -> Cache {
+impl<R: gfx::Resources> Cache<R> {
+    pub fn new() -> Cache<R> {
         Cache {
             meshes: HashMap::new(),
             textures: HashMap::new(),
@@ -34,12 +44,12 @@ impl Cache {
     }
 }
 
-pub struct Context<'a, D: 'a> {
-    pub cache: Cache,
-    pub device: &'a mut D,
+pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
+    pub cache: Cache<R>,
+    pub factory: &'a mut F,
     pub prefix: String,
-    pub texture_black: gfx::TextureHandle,
-    pub sampler_point: gfx::SamplerHandle,
+    pub texture_black: gfx::TextureHandle<R>,
+    pub sampler_point: gfx::SamplerHandle<R>,
 }
 
 #[derive(Clone, Debug)]
@@ -48,8 +58,8 @@ pub enum ContextError {
     Program(gfx::ProgramError),
 }
 
-impl<'a, D: gfx::Device> Context<'a, D> {
-    pub fn new(device: &'a mut D) -> Result<Context<'a, D>, ContextError> {
+impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
+    pub fn new(factory: &'a mut F) -> Result<Context<'a, R, F>, ContextError> {
         let tinfo = gfx::tex::TextureInfo {
             width: 1,
             height: 1,
@@ -59,20 +69,20 @@ impl<'a, D: gfx::Device> Context<'a, D> {
             kind: gfx::tex::TextureKind::Texture2D,
         };
         let image_info = tinfo.to_image_info();
-        let texture = match device.create_texture(tinfo) {
-            Ok(t) => match device.update_texture(&t, &image_info, &[0u8, 0, 0, 0]) {
+        let texture = match factory.create_texture(tinfo) {
+            Ok(t) => match factory.update_texture(&t, &image_info, &[0u8, 0, 0, 0]) {
                 Ok(()) => t,
                 Err(e) => return Err(ContextError::Texture(e)),
             },
             Err(e) => return Err(ContextError::Texture(e)),
         };
-        let sampler = device.create_sampler(gfx::tex::SamplerInfo::new(
+        let sampler = factory.create_sampler(gfx::tex::SamplerInfo::new(
             gfx::tex::FilterMethod::Scale,
             gfx::tex::WrapMode::Tile
         ));
         Ok(Context {
             cache: Cache::new(),
-            device: device,
+            factory: factory,
             prefix: String::new(),
             texture_black: texture,
             sampler_point: sampler,
@@ -87,7 +97,7 @@ impl<'a, D: gfx::Device> Context<'a, D> {
                 let size = file.stat().unwrap().size as u32;
                 let mut reader = chunk::Root::new(path_str.to_string(), file);
                 while reader.get_pos() < size {
-                    let (name, success) = try!(mesh::load(&mut reader, self.device));
+                    let (name, success) = try!(mesh::load(&mut reader, self.factory));
                     let full_name = format!("{}@{}", name, path_str);
                     self.cache.meshes.insert(full_name, success);
                 }
@@ -98,7 +108,7 @@ impl<'a, D: gfx::Device> Context<'a, D> {
     }
 
     pub fn request_mesh(&mut self, path: &str)
-                        -> Result<mesh::Success, mesh::Error> {
+                        -> Result<mesh::Success<R>, mesh::Error> {
         match self.cache.meshes.get(path) {
             Some(m) => return Ok(m.clone()),
             None => (),
@@ -115,13 +125,13 @@ impl<'a, D: gfx::Device> Context<'a, D> {
     }
 
     pub fn request_texture(&mut self, path_str: &str)
-                           -> Result<gfx::TextureHandle, TextureError> {
+                           -> Result<gfx::TextureHandle<R>, TextureError> {
         match self.cache.textures.entry(path_str.to_string()) {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {
                 info!("Loading texture from {}", path_str);
                 let path = Path::new(format!("{}{}", self.prefix, path_str));
-                let tex_maybe = gfx_texture::Texture::from_path(self.device, &path)
+                let tex_maybe = gfx_texture::Texture::from_path(self.factory, &path)
                     .map(|t| t.handle);
                 v.insert(tex_maybe).clone()
             },
@@ -129,12 +139,12 @@ impl<'a, D: gfx::Device> Context<'a, D> {
     }
 
     pub fn request_program(&mut self, name: &str)
-                           -> Result<gfx::ProgramHandle, program::Error> {
+                           -> Result<gfx::ProgramHandle<R>, program::Error> {
         match self.cache.programs.entry(name.to_string()) {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {
                 info!("Loading program {}", name);
-                let prog_maybe = program::load(name, self.device);
+                let prog_maybe = program::load(name, self.factory);
                 v.insert(prog_maybe).clone()
             },
         }
@@ -148,8 +158,10 @@ pub enum SceneError {
     Parse(scene::Error),
 }
 
-pub fn scene<'a, D: gfx::Device>(path_str: &str, context: &mut Context<'a, D>)
-             -> Result<scene::SceneJson, SceneError> {
+pub fn scene<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str,
+             context: &mut Context<'a, R, F>)
+             -> Result<claymore_scene::Scene<R, mat::Material<R>, scene::Scalar>, SceneError> {
+    use std::old_io::Reader;
     info!("Loading scene from {}", path_str);
     context.prefix = path_str.to_string();
     let path = Path::new(format!("{}.json", path_str).as_slice());
@@ -165,14 +177,14 @@ pub fn scene<'a, D: gfx::Device>(path_str: &str, context: &mut Context<'a, D>)
     }
 }
 
-pub fn mesh<D: gfx::Device>(path_str: &str, device: &mut D)
-            -> Result<(String, mesh::Success), mesh::Error> {
+pub fn mesh<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str, factory: &mut F)
+            -> Result<(String, mesh::Success<R>), mesh::Error> {
     info!("Loading mesh from {}", path_str);
     let path = Path::new(format!("{}.k3mesh", path_str).as_slice());
     match io::File::open(&path) {
         Ok(file) => {
             let mut reader = chunk::Root::new(path_str.to_string(), file);
-            mesh::load(&mut reader, device)
+            mesh::load(&mut reader, factory)
         },
         Err(e) => Err(mesh::Error::Path(e)),
     }

@@ -2,7 +2,7 @@ use std::old_io as io;
 use gfx;
 use super::chunk::Root;
 
-pub type Success = (gfx::Mesh, gfx::Slice);
+pub type Success<R> = (gfx::Mesh<R>, gfx::Slice<R>);
 
 /// Parse type character to gfx attribute type
 /// using Python packing notation:
@@ -46,9 +46,10 @@ pub enum Error {
     Other,
 }
 
-pub fn load<R: io::Reader, D: gfx::Device>(
-            reader: &mut Root<R>, device: &mut D)
-            -> Result<(String, Success), Error> {
+pub fn load<I: io::Reader, R: gfx::Resources, F: gfx::Factory<R>>(
+            reader: &mut Root<I>, factory: &mut F)
+            -> Result<(String, Success<R>), Error> {
+    use std::old_io::Reader;
     use gfx::PrimitiveType;
     let mut cmesh = reader.enter();
     if cmesh.get_name() != "mesh"    {
@@ -76,14 +77,14 @@ pub fn load<R: io::Reader, D: gfx::Device>(
     while cmesh.has_more() {
         let mut cbuf = cmesh.enter();
         let buf_name = cbuf.get_name().to_string();
-        match (buf_name.as_slice(), slice.kind) {
+        match (buf_name.as_slice(), &slice.kind) {
             ("buffer", _) => {
                 let stride = cbuf.read_u8();
                 let format_str = cbuf.read_string();
                 debug!("\tBuffer stride: {}, format: {}", stride, format_str);
                 let buffer = {
                     let data = cbuf.read_bytes(n_vert * (stride as u32));
-                    device.create_buffer_static_raw(data)
+                    factory.create_buffer_static_raw(data, gfx::BufferRole::Vertex)
                 };
                 let mut offset = 0;
                 for sub in format_str.as_bytes().chunks(2) {
@@ -100,7 +101,7 @@ pub fn load<R: io::Reader, D: gfx::Device>(
                     };
                     mesh.attributes.push(gfx::Attribute {
                         name: format!("{}{}", super::PREFIX_ATTRIB, name),
-                        buffer: buffer.raw(),
+                        buffer: buffer.clone(),
                         format: gfx::attrib::Format {
                             elem_count: el_count,
                             elem_type: el_type,
@@ -115,25 +116,25 @@ pub fn load<R: io::Reader, D: gfx::Device>(
                     return Err(Error::Stride(offset));
                 }
             },
-            ("index", gfx::SliceKind::Vertex)=> {
+            ("index", &gfx::SliceKind::Vertex)=> {
                 let n_ind = cbuf.read_u32();
                 let format = cbuf.read_u8() as char;
                 debug!("\tIndex format: {}, count: {}", format, n_ind);
                 slice.kind = match format {
                     'B' => {
                         let data = cbuf.read_bytes(n_ind * 1);
-                        let buf = device.create_buffer_static_raw(data);
-                        gfx::SliceKind::Index8(buf.cast(), 0)
+                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index8(gfx::IndexBufferHandle::from_raw(buf), 0)
                     },
                     'H' => {
                         let data = cbuf.read_bytes(n_ind * 2);
-                        let buf = device.create_buffer_static_raw(data);
-                        gfx::SliceKind::Index16(buf.cast(), 0)
+                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index16(gfx::IndexBufferHandle::from_raw(buf), 0)
                     },
                     'L' => {
                         let data = cbuf.read_bytes(n_ind * 4);
-                        let buf = device.create_buffer_static_raw(data);
-                        gfx::SliceKind::Index32(buf.cast(), 0)
+                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index32(gfx::IndexBufferHandle::from_raw(buf), 0)
                     },
                     _ => return Err(Error::IndexType(format)),
                 };
