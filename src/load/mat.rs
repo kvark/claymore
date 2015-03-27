@@ -14,8 +14,9 @@ pub enum Error {
 
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
             context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
+    use std::borrow::Borrow;
     let mut out = Material {
-        shader: match mat.shader.as_slice() {
+        shader: match mat.shader.borrow() {
             "PHONG" => Shader::Phong,
             _ => return Err(Error::Program(mat.shader.clone())),
         },
@@ -23,7 +24,7 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
     };
     match mat.textures.first() {
-        Some(ref rt) => match context.request_texture(rt.path.as_slice()) {
+        Some(ref rt) => match context.request_texture(&rt.path) {
             Ok(t) => {
                 fn unwrap(mode: i8) -> Result<gfx::tex::WrapMode, Error> {
                     match mode {

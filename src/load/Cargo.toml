@@ -6,7 +6,7 @@ authors = [
 ]
 
 [lib]
-name = "claymore-load"
+name = "claymore_load"
 path = "lib.rs"
 
 [dependencies.claymore-scene]

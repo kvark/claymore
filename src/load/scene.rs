@@ -38,15 +38,12 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         for n in raw_nodes.iter() {
             let space = read_space(&n.space);
             let nid = world.add_node(n.name.clone(), parent, space);
-            populate_world(world,
-                n.children.as_slice(),
-                cs::space::Parent::Domestic(nid)
-            );
+            populate_world(world, &n.children, cs::space::Parent::Domestic(nid));
         }
     }
     // create world
     let mut world = cs::space::World::new();
-    populate_world(&mut world, raw.nodes.as_slice(), cs::space::Parent::None);
+    populate_world(&mut world, &raw.nodes, cs::space::Parent::None);
     // read camera
     let camera = {
         use std::num::Float;
@@ -54,9 +51,9 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             Some(c) => c,
             None => return Err(Error::NoCamera),
         };
-        let node = match world.find_node(cam.node.as_slice()) {
+        let node = match world.find_node(&cam.node) {
             Some(n) => n,
-            None => return Err(Error::MissingNode(cam.node.clone())),
+            None => return Err(Error::MissingNode(cam.node.to_string())),
         };
         let (fovx, fovy) = cam.angle;
         let (near, far) = cam.range;
@@ -78,11 +75,11 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
     let mut scene = gfx_scene::Scene::new(world);
     scene.cameras.push(camera);
     for ent in raw.entities.iter() {
-        let node = match scene.world.find_node(ent.node.as_slice()) {
+        let node = match scene.world.find_node(&ent.node) {
             Some(n) => n,
             None => return Err(Error::MissingNode(ent.node.clone())),
         };
-        let (mesh, mut slice) = match context.request_mesh(ent.mesh.as_slice()) {
+        let (mesh, mut slice) = match context.request_mesh(&ent.mesh) {
             Ok(success) => success,
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };

@@ -1,14 +1,15 @@
-#![feature(collections, core, old_io, old_path, std_misc, unsafe_destructor)]
+#![feature(collections, convert, unsafe_destructor)]
 
 #[macro_use]
 extern crate log;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate cgmath;
 extern crate gfx;
 extern crate gfx_texture;
 extern crate gfx_scene;
-extern crate "claymore-scene" as claymore_scene;
+extern crate claymore_scene;
 
+mod aux;
 pub mod chunk;
 mod mesh;
 mod mat;
@@ -17,9 +18,9 @@ mod reflect;
 mod scene;
 
 use std::collections::hash_map::{HashMap, Entry};
-use std::old_path::Path;
+use std::io;
+use std::fs::File;
 use rustc_serialize::json;
-use std::old_io as io;
 
 pub static PREFIX_ATTRIB : &'static str = "a_";
 pub static PREFIX_UNIFORM: &'static str = "u_";
@@ -90,10 +91,10 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
 
     fn read_mesh_collection(&mut self, path_str: &str) -> Result<(), mesh::Error> {
         info!("Loading mesh collection from {}", path_str);
-        let path = Path::new(format!("{}/{}.k3mesh", self.prefix, path_str));
-        match io::File::open(&path) {
+        let path = format!("{}/{}.k3mesh", self.prefix, path_str);
+        match File::open(path) {
             Ok(file) => {
-                let size = file.stat().unwrap().size as u32;
+                let size = file.metadata().unwrap().len() as u32;
                 let mut reader = chunk::Root::new(path_str.to_string(), file);
                 while reader.get_pos() < size {
                     let (name, success) = try!(mesh::load(&mut reader, self.factory));
@@ -117,7 +118,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         match split.next() {
             Some(container) => {
                 try!(self.read_mesh_collection(container));
-                Ok(self.cache.meshes[path.to_string()].clone())
+                Ok(self.cache.meshes[path].clone())
             },
             None => Err(mesh::Error::Other),
         }
@@ -129,8 +130,8 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {
                 info!("Loading texture from {}", path_str);
-                let path = Path::new(format!("{}{}", self.prefix, path_str));
-                let tex_maybe = gfx_texture::Texture::from_path(self.factory, &path)
+                let path_str = format!("{}{}", self.prefix, path_str);
+                let tex_maybe = gfx_texture::Texture::from_path(self.factory, path_str.as_ref())
                     .map(|t| t.handle);
                 v.insert(tex_maybe).clone()
             },
@@ -152,7 +153,8 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
 
 #[derive(Debug)]
 pub enum SceneError {
-    Read(io::IoError),
+    Open(io::Error),
+    Read(io::Error),
     Decode(json::DecoderError),
     Parse(scene::Error),
 }
@@ -160,29 +162,35 @@ pub enum SceneError {
 pub fn scene<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str,
              context: &mut Context<'a, R, F>)
              -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError> {
-    use std::old_io::Reader;
+    use std::io::Read;
     info!("Loading scene from {}", path_str);
     context.prefix = path_str.to_string();
-    let path = Path::new(format!("{}.json", path_str).as_slice());
-    match io::File::open(&path).read_to_string() {
-        Ok(data) => match json::decode(data.as_slice()) {
-            Ok(raw) => match scene::load(raw, context) {
-                Ok(s) => Ok(s),
-                Err(e) => Err(SceneError::Parse(e)),
-            },
-            Err(e) => Err(SceneError::Decode(e)),
+    let path = format!("{}.json", path_str);
+    match File::open(&path) {
+        Ok(mut file) => {
+            let mut s = String::new();
+            match file.read_to_string(&mut s) {
+                Ok(_) => match json::decode(&s) {
+                    Ok(raw) => match scene::load(raw, context) {
+                        Ok(s) => Ok(s),
+                        Err(e) => Err(SceneError::Parse(e)),
+                    },
+                    Err(e) => Err(SceneError::Decode(e)),
+                },
+                Err(e) => Err(SceneError::Read(e)),
+            }
         },
-        Err(e) => Err(SceneError::Read(e)),
+        Err(e) => Err(SceneError::Open(e)),
     }
 }
 
 pub fn mesh<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str, factory: &mut F)
             -> Result<(String, mesh::Success<R>), mesh::Error> {
     info!("Loading mesh from {}", path_str);
-    let path = Path::new(format!("{}.k3mesh", path_str).as_slice());
-    match io::File::open(&path) {
+    let path = format!("{}.k3mesh", path_str);
+    match File::open(&path) {
         Ok(file) => {
-            let mut reader = chunk::Root::new(path_str.to_string(), file);
+            let mut reader = chunk::Root::new(path, file);
             mesh::load(&mut reader, factory)
         },
         Err(e) => Err(mesh::Error::Path(e)),

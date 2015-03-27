@@ -6,7 +6,7 @@ authors = [
 ]
 
 [lib]
-name = "claymore-scene"
+name = "claymore_scene"
 path = "lib.rs"
 
 [dependencies.id]
@@ -30,3 +30,6 @@ git = "https://github.com/kvark/gfx_scene"
 
 #[dependencies.image]
 #git = "https://github.com/PistonDevelopers/image"
+
+[dependencies]
+log = "*"

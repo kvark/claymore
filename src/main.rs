@@ -4,8 +4,8 @@ extern crate gfx;
 extern crate gfx_phase;
 extern crate gfx_scene;
 extern crate gfx_device_gl;
-extern crate "claymore-load" as load;
-extern crate "claymore-scene" as scene;
+extern crate claymore_load as load;
+extern crate claymore_scene as scene;
 
 fn main() {
     use gfx::traits::*;

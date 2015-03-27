@@ -1,6 +1,7 @@
-use std::old_io as io;
+use std::io;
 use std::fmt;
 use std::ops::{Deref, DerefMut};
+use ::aux::ReadExt;
 
 static NAME_LENGTH: u32 = 8;
 
@@ -11,7 +12,7 @@ pub struct Root<R> {
     position: u32,
 }
 
-impl<R: io::Reader> Root<R> {
+impl<R: io::Read> Root<R> {
     pub fn new(name: String, input: R) -> Root<R> {
         Root {
             name: name,
@@ -26,19 +27,17 @@ impl<R: io::Reader> Root<R> {
     }
 
     fn skip(&mut self, num: u32) {
-        use std::old_io::BytesReader;
-        self.position += num;
-        let _ = self.input.bytes().skip(num as usize);
+        self.read_bytes(num);
     }
 
     pub fn read_bytes(&mut self, num: u32) -> &[u8] {
         self.position += num;
-        self.buffer.truncate(0);
+        self.buffer.clear();
         for _ in (0.. num) {
             let b = self.input.read_u8().unwrap();
             self.buffer.push(b);
         }
-        self.buffer.as_slice()
+        &self.buffer
     }
 
     pub fn read_u8(&mut self) -> u8 {
@@ -48,7 +47,7 @@ impl<R: io::Reader> Root<R> {
 
     pub fn read_u32(&mut self) -> u32 {
         self.position += 4;
-        self.input.read_le_u32().unwrap()
+        self.input.read_u32().unwrap()
     }
 
     pub fn read_bool(&mut self) -> bool {
@@ -56,11 +55,12 @@ impl<R: io::Reader> Root<R> {
         self.input.read_u8().unwrap() != 0
     }
 
-    pub fn read_string(&mut self) -> String {
-        let size = self.input.read_u8().unwrap();
-        self.position += 1 + (size as u32);
-        let buf = self.input.read_exact(size as usize).unwrap();
-        String::from_utf8(buf).unwrap()
+    pub fn read_str(&mut self) -> &str {
+        use std::str::from_utf8;
+        let size = self.input.read_u8().unwrap() as u32;
+        self.position += 1;
+        let buf = self.read_bytes(size);
+        from_utf8(buf).unwrap()
     }
 
     pub fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
@@ -98,9 +98,9 @@ impl<'a, R> fmt::Display for Chunk<'a, R> {
     }
 }
 
-impl<'a, R: io::Reader> Chunk<'a, R> {
+impl<'a, R: io::Read> Chunk<'a, R> {
     pub fn get_name(&self) -> &str {
-        self.name.as_slice()
+        &self.name
     }
 
     pub fn has_more(&self)-> bool {
@@ -114,7 +114,7 @@ impl<'a, R: io::Reader> Chunk<'a, R> {
 }
 
 #[unsafe_destructor]
-impl<'a, R: io::Reader> Drop for Chunk<'a, R> {
+impl<'a, R: io::Read> Drop for Chunk<'a, R> {
     fn drop(&mut self) {
         debug!("Leaving chunk");
         assert!(!self.has_more())

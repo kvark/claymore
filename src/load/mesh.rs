@@ -1,6 +1,7 @@
-use std::old_io as io;
+use std::io;
 use gfx;
-use super::chunk::Root;
+use ::aux::ReadExt;
+use ::chunk::Root;
 
 pub type Success<R> = (gfx::Mesh<R>, gfx::Slice<R>);
 
@@ -35,7 +36,7 @@ fn parse_type(type_: char, normalized: u8) -> Result<gfx::attrib::Type, ()> {
 
 #[derive(Debug)]
 pub enum Error {
-    Path(io::IoError),
+    Path(io::Error),
     Chunk(String),
     Signature(String),
     Topology(String),
@@ -46,41 +47,38 @@ pub enum Error {
     Other,
 }
 
-pub fn load<I: io::Reader, R: gfx::Resources, F: gfx::Factory<R>>(
+pub fn load<I: io::Read, R: gfx::Resources, F: gfx::Factory<R>>(
             reader: &mut Root<I>, factory: &mut F)
             -> Result<(String, Success<R>), Error> {
-    use std::old_io::Reader;
     use gfx::PrimitiveType;
     let mut cmesh = reader.enter();
     if cmesh.get_name() != "mesh"    {
         return Err(Error::Signature(cmesh.get_name().to_string()))
     }
-    let mesh_name = cmesh.read_string();
+    let mesh_name = cmesh.read_str().to_string();
     let n_vert = cmesh.read_u32();
-    let topology = cmesh.read_string();
     info!("\tname: {}, vertices: {}", mesh_name, n_vert);
     let mut slice = gfx::Slice {
         start: 0,
         end: n_vert,
-        prim_type: match topology.as_slice() {
+        prim_type: match cmesh.read_str() {
             "1" => PrimitiveType::Point,
             "2" => PrimitiveType::Line,
             "2s"=> PrimitiveType::LineStrip,
             "3" => PrimitiveType::TriangleList,
             "3s"=> PrimitiveType::TriangleStrip,
             "3f"=> PrimitiveType::TriangleFan,
-            _ => return Err(Error::Topology(topology)),
+            top => return Err(Error::Topology(top.to_string())),
         },
         kind: gfx::SliceKind::Vertex,
     };
     let mut mesh = gfx::Mesh::new(n_vert);
     while cmesh.has_more() {
         let mut cbuf = cmesh.enter();
-        let buf_name = cbuf.get_name().to_string();
-        match (buf_name.as_slice(), &slice.kind) {
-            ("buffer", _) => {
+        match &slice.kind {
+            _ if cbuf.get_name() == "buffer" => {
                 let stride = cbuf.read_u8();
-                let format_str = cbuf.read_string();
+                let format_str = cbuf.read_str().to_string();
                 debug!("\tBuffer stride: {}, format: {}", stride, format_str);
                 let buffer = {
                     let data = cbuf.read_bytes(n_vert * (stride as u32));
@@ -90,7 +88,7 @@ pub fn load<I: io::Reader, R: gfx::Resources, F: gfx::Factory<R>>(
                 for sub in format_str.as_bytes().chunks(2) {
                     let el_count = sub[0] - ('0' as u8);
                     let type_ = sub[1] as char;
-                    let name = cbuf.read_string();
+                    let name = cbuf.read_str().to_string();
                     let flags = cbuf.read_u8();
                     debug!("\t\tname: {}, count: {}, type: {}, flags: {}",
                         name, el_count, type_, flags);
@@ -116,7 +114,7 @@ pub fn load<I: io::Reader, R: gfx::Resources, F: gfx::Factory<R>>(
                     return Err(Error::Stride(offset));
                 }
             },
-            ("index", &gfx::SliceKind::Vertex)=> {
+            &gfx::SliceKind::Vertex if cbuf.get_name() == "index" => {
                 let n_ind = cbuf.read_u32();
                 let format = cbuf.read_u8() as char;
                 debug!("\tIndex format: {}, count: {}", format, n_ind);
@@ -139,8 +137,8 @@ pub fn load<I: io::Reader, R: gfx::Resources, F: gfx::Factory<R>>(
                     _ => return Err(Error::IndexType(format)),
                 };
             },
-            ("index", _) => return Err(Error::DoubleIndex),
-            _ => return Err(Error::Chunk(buf_name)),
+            _ if cbuf.get_name() == "index" => return Err(Error::DoubleIndex),
+            _ => return Err(Error::Chunk(cbuf.get_name().to_string())),
         }
     }
     Ok((mesh_name, (mesh, slice)))
