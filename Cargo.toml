@@ -19,6 +19,9 @@ path = "src/scene/"
 [dependencies.claymore-load]
 path = "src/load/"
 
+[dependencies.claymore-game]
+path = "src/game/"
+
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin"
 
@@ -27,9 +30,3 @@ git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.gfx_device_gl]
 git = "https://github.com/gfx-rs/gfx_device_gl"
-
-[dependencies.gfx_phase]
-git = "https://github.com/kvark/gfx_scene"
-
-[dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"

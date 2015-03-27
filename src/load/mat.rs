@@ -1,5 +1,4 @@
 use gfx;
-//use gfx_texture; //TODO
 use claymore_scene::tech::{Material, Shader};
 use super::reflect;
 

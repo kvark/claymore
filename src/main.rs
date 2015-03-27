@@ -1,11 +1,8 @@
 extern crate env_logger;
 extern crate glutin;
 extern crate gfx;
-extern crate gfx_phase;
-extern crate gfx_scene;
 extern crate gfx_device_gl;
-extern crate claymore_load as load;
-extern crate claymore_scene as scene;
+extern crate claymore_game as game;
 
 fn main() {
     use gfx::traits::*;
@@ -17,29 +14,13 @@ fn main() {
     window.set_title("Claymore");
     unsafe { window.make_current() };
     let mut device = gfx_device_gl::GlDevice::new(|s| window.get_proc_address(s));
-
     let (w, h) = window.get_inner_size().unwrap();
-    let frame = gfx::Frame::new(w as u16, h as u16);
-    let mut renderer = device.create_renderer();
 
-    println!("Loading the test scene...");
-    let (mut phase, mut scene) = {
-        let mut context = load::Context::new(&mut device).unwrap();
-        let program = context.request_program("phong").unwrap();
-        let texture = (context.texture_black.clone(), None);
-        let phase = gfx_phase::Phase::new_cached(
-           "Main",
-            scene::tech::Technique::new(program, texture)
-        );
-        let scene = load::scene("data/vika", &mut context).unwrap();
-        (phase, scene)
-    };
-    let mut camera = scene.cameras[0].clone();
-    camera.projection.aspect = w as f32 / h as f32;
+    println!("Loading the game...");
+    let mut app = game::App::new(&mut device, w as u16, h as u16);
 
     println!("Rendering...");
     'main: loop {
-        use gfx_scene::AbstractScene;
         // quit when Esc is pressed.
         for event in window.poll_events() {
             match event {
@@ -49,18 +30,9 @@ fn main() {
             }
         }
 
-        scene.world.update();
+        let buf = app.render().unwrap();
 
-        let clear_data = gfx::ClearData {
-            color: [0.2, 0.3, 0.4, 1.0],
-            depth: 1.0,
-            stencil: 0,
-        };
-        renderer.reset();
-        renderer.clear(clear_data, gfx::COLOR | gfx::DEPTH, &frame);
-        scene.draw(&mut phase, &camera, &frame, &mut renderer).unwrap();
-
-        device.submit(renderer.as_buffer());
+        device.submit(buf);
         window.swap_buffers();
         device.after_frame();
     }

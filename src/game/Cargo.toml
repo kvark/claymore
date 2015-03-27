@@ -1,0 +1,28 @@
+[package]
+name = "claymore-game"
+version = "0.0.1"
+authors = [
+"Dzmitry Malyshau <kvarkus@gmail.com>",
+]
+
+[lib]
+name = "claymore_game"
+path = "lib.rs"
+
+[dependencies.claymore-scene]
+path = "../scene"
+
+[dependencies.claymore-load]
+path = "../load"
+
+[dependencies.cgmath]
+git = "https://github.com/bjz/cgmath-rs"
+
+[dependencies.gfx]
+git = "https://github.com/gfx-rs/gfx-rs"
+
+[dependencies.gfx_phase]
+git = "https://github.com/kvark/gfx_scene"
+
+[dependencies.gfx_scene]
+git = "https://github.com/kvark/gfx_scene"

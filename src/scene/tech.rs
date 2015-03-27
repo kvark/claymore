@@ -1,6 +1,8 @@
 use gfx;
 use gfx_phase;
 
+pub type Phase<R> = gfx_phase::CachedPhase<R, Material<R>, ::ViewInfo<f32>, Technique<R>>;
+
 #[derive(Clone)]
 #[shader_param]
 pub struct Params<R: gfx::Resources> {

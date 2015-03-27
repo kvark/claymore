@@ -46,10 +46,17 @@ impl<S: cgmath::BaseFloat + 'static> gfx_scene::ViewInfo<S, Transform<S>> for Vi
 pub type World<S> = space::World<S, Transform<S>>;
 pub type Node<S> = space::Node<Transform<S>>;
 pub type Skeleton<S> = space::Skeleton<Transform<S>>;
+pub type Projection<S> = cgmath::PerspectiveFov<S, cgmath::Rad<S>>;
+
+pub type Camera<S> = gfx_scene::Camera<
+    Projection<S>,
+    id::Id<space::Node<Transform<S>>>,
+>;
+
 pub type Scene<R, S> = gfx_scene::Scene<R,
     tech::Material<R>,
     World<S>,
     cgmath::Aabb3<S>,
-    cgmath::PerspectiveFov<S, cgmath::Rad<S>>,
+    Projection<S>,
     ViewInfo<S>
 >;

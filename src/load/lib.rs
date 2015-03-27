@@ -22,6 +22,9 @@ use std::io;
 use std::fs::File;
 use rustc_serialize::json;
 
+pub use self::scene::Scalar;
+
+
 pub static PREFIX_ATTRIB : &'static str = "a_";
 pub static PREFIX_UNIFORM: &'static str = "u_";
 pub static PREFIX_TEXTURE: &'static str = "t_";
