@@ -28,8 +28,8 @@ git = "https://github.com/kvark/gfx_scene"
 [dependencies.gfx_scene]
 git = "https://github.com/kvark/gfx_scene"
 
-#[dependencies.image]
-#git = "https://github.com/PistonDevelopers/image"
+[dependencies.gfx_pipeline]
+git = "https://github.com/kvark/gfx_pipeline"
 
 [dependencies]
 log = "*"

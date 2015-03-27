@@ -1,14 +1,18 @@
 extern crate gfx;
 extern crate gfx_phase;
 extern crate gfx_scene;
+extern crate gfx_pipeline;
 extern crate claymore_scene as scene;
 extern crate claymore_load as load;
+
+use gfx_pipeline::forward as pipe;
+
 
 pub struct App<D: gfx::Device> {
     renderer: gfx::Renderer<D::Resources, D::CommandBuffer>,
     frame: gfx::Frame<D::Resources>,
     scene: scene::Scene<D::Resources, load::Scalar>,
-    phase: scene::tech::Phase<D::Resources>,
+    phase: pipe::Phase<D::Resources>,
 }
 
 impl<
@@ -20,12 +24,13 @@ impl<
     {
         use gfx::traits::*;
         let renderer = device.create_renderer();
+        // load the scene and create the phase
         let mut context = load::Context::new(device).unwrap();
         let program = context.request_program("phong").unwrap();
         let texture = (context.texture_black.clone(), None);
         let phase = gfx_phase::Phase::new_cached(
            "Main",
-            scene::tech::Technique::new(program, texture)
+            pipe::Technique::new(program, texture)
         );
         let mut scene = load::scene("data/vika", &mut context).unwrap();
         scene.cameras[0].projection.aspect = width as f32 / height as f32;

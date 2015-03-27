@@ -26,3 +26,6 @@ git = "https://github.com/kvark/gfx_scene"
 
 [dependencies.gfx_scene]
 git = "https://github.com/kvark/gfx_scene"
+
+[dependencies.gfx_pipeline]
+git = "https://github.com/kvark/gfx_pipeline"

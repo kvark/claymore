@@ -70,7 +70,7 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         }
     };
     // read materials
-    let mut material_map: HashMap<String, cs::tech::Material<R>> = HashMap::new();
+    let mut material_map: HashMap<String, cs::Material<R>> = HashMap::new();
     // read entities
     let mut scene = gfx_scene::Scene::new(world);
     scene.cameras.push(camera);

@@ -1,11 +1,11 @@
 use gfx;
-use claymore_scene::tech::{Material, Shader};
+use claymore_scene::Material;
 use super::reflect;
 
 #[derive(Debug)]
 pub enum Error {
     NotFound,
-    Program(String),
+    //Program(String),
     Texture(String, super::TextureError),
     SamplerFilter(String, u8),
     SamplerWrap(i8),
@@ -13,12 +13,7 @@ pub enum Error {
 
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
             context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
-    use std::borrow::Borrow;
     let mut out = Material {
-        shader: match mat.shader.borrow() {
-            "PHONG" => Shader::Phong,
-            _ => return Err(Error::Program(mat.shader.clone())),
-        },
         color: [1.0, 1.0, 1.0, 1.0],
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
     };
