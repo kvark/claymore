@@ -1,6 +1,4 @@
 extern crate gfx;
-extern crate gfx_phase;
-extern crate gfx_scene;
 extern crate gfx_pipeline;
 extern crate claymore_scene as scene;
 extern crate claymore_load as load;
@@ -39,7 +37,7 @@ impl<
         }
     }
 
-    pub fn render(&mut self) -> Result<gfx::SubmitInfo<D>, gfx_scene::Error> {
+    pub fn render(&mut self) -> Result<gfx::SubmitInfo<D>, gfx_pipeline::Error> {
         use gfx_pipeline::Pipeline;
         self.scene.world.update();
         let camera = self.scene.cameras[0].clone();
