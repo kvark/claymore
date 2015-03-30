@@ -85,14 +85,14 @@ impl<R: io::Read> Root<R> {
     }
 }
 
-pub struct Chunk<'a, R: 'a> {
+pub struct Chunk<'a, R: io::Read + 'a> {
     name: String,
     size: u32,
     end_pos: u32,
     root: &'a mut Root<R>,
 }
 
-impl<'a, R> fmt::Display for Chunk<'a, R> {
+impl<'a, R: io::Read> fmt::Display for Chunk<'a, R> {
     fn fmt(&self, fm: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(fm, "Chunk({}, {} left)", self.name, self.size)
     }
@@ -121,14 +121,14 @@ impl<'a, R: io::Read> Drop for Chunk<'a, R> {
     }
 }
 
-impl<'a, R> Deref for Chunk<'a, R> {
+impl<'a, R: io::Read> Deref for Chunk<'a, R> {
     type Target = Root<R>;
     fn deref(&self) -> &Root<R> {
         self.root
     }
 }
 
-impl<'a, R> DerefMut for Chunk<'a, R> {
+impl<'a, R: io::Read> DerefMut for Chunk<'a, R> {
     fn deref_mut(&mut self) -> &mut Root<R> {
         self.root
     }

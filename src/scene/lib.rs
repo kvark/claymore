@@ -11,8 +11,7 @@ extern crate gfx_scene;
 extern crate gfx_pipeline;
 
 pub mod space;
-pub use gfx_pipeline::forward as tech;
-pub use gfx_pipeline::Material;
+pub use gfx_pipeline::{Material, ViewInfo};
 
 pub type Transform<S> = cgmath::Decomposed<
     S,
@@ -35,5 +34,5 @@ pub type Scene<R, S> = gfx_scene::Scene<R,
     World<S>,
     cgmath::Aabb3<S>,
     Projection<S>,
-    gfx_pipeline::view::Info<S>,
+    gfx_pipeline::ViewInfo<S>,
 >;

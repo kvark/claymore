@@ -16,6 +16,7 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
     let mut out = Material {
         color: [1.0, 1.0, 1.0, 1.0],
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
+        blend: None,
     };
     match mat.textures.first() {
         Some(ref rt) => match context.request_texture(&rt.path) {
