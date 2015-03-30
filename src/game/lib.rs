@@ -5,13 +5,13 @@ extern crate gfx_pipeline;
 extern crate claymore_scene as scene;
 extern crate claymore_load as load;
 
-use gfx_pipeline::forward as pipe;
+use gfx_pipeline::forward::Pipeline;
 
 
 pub struct App<D: gfx::Device> {
     frame: gfx::Frame<D::Resources>,
     scene: scene::Scene<D::Resources, load::Scalar>,
-    pipeline: pipe::Pipeline<D>,
+    pipeline: Pipeline<D>,
 }
 
 impl<
@@ -29,7 +29,7 @@ impl<
             (scene, (context.texture_black.clone(), None))
         };
         // create the pipeline
-        let mut pipeline = pipe::Pipeline::new(device, texture).unwrap();
+        let mut pipeline = Pipeline::new(device, texture).unwrap();
         pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
         // done
         App {

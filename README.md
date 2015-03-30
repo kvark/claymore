@@ -8,4 +8,5 @@ This is an experimental game project in Rust. It provides Blender-based asset pi
 - [simplecs](https://github.com/kvark/simplecs)
 - [gfx-rs](https://github.com/gfx-rs/gfx-rs)
 - [gfx_scene](https://github.com/kvark/gfx_scene)
+- [gfx_pipeline](https://github.com/kvark/gfx_pipeline)
 - [blender](blender.org)
