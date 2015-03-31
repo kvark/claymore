@@ -10,8 +10,11 @@ fn main() {
     env_logger::init().unwrap();
     println!("Initializing the window...");
 
-    let window = glutin::WindowBuilder::new().with_vsync().build().unwrap();
-    window.set_title("Claymore");
+    let window = glutin::WindowBuilder::new()
+        .with_title("Claymore".to_string())
+        .with_vsync()
+        .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
+        .build().unwrap();
     unsafe { window.make_current() };
     let mut device = gfx_device_gl::GlDevice::new(|s| window.get_proc_address(s));
     let (w, h) = window.get_inner_size().unwrap();

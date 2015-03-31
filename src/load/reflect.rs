@@ -69,6 +69,7 @@ pub struct Camera {
 pub struct Material {
     pub name: String,
     pub shader: String,
+    pub transparent: bool,
     pub data: HashMap<String, Data>,
     pub textures: Vec<Texture>,
 }
@@ -78,11 +79,18 @@ pub type Data = (String, Vec<f32>);
 #[derive(RustcDecodable)]
 pub struct Texture {
     pub name: String,
-    pub path: String,
+    pub image: Image,
     pub filter: u8,
     pub wrap: (i8, i8, i8),
     pub offset: (Scalar, Scalar, Scalar),
     pub scale: (Scalar, Scalar, Scalar),
+}
+
+#[derive(RustcDecodable)]
+pub struct Image {
+    pub path: String,
+    pub space: String,
+    pub mapping: String,
 }
 
 pub type Action = ();   //TODO

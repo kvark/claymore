@@ -19,10 +19,13 @@ impl<
 > App<D> {
     pub fn new(device: &mut D, width: u16, height: u16) -> App<D>
     {
+        use std::env;
         // load the scene
         let (scene, texture) = {
-            let mut context = load::Context::new(device).unwrap();
-            let mut scene = load::scene("data/vika", &mut context).unwrap();
+            let mut context = load::Context::new(device,
+                env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
+                ).unwrap();
+            let mut scene = context.load_scene("data/valefor").unwrap();
             scene.cameras[0].projection.aspect = width as f32 / height as f32;
             (scene, (context.texture_black.clone(), None))
         };

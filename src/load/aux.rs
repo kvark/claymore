@@ -14,8 +14,8 @@ impl<R: io::Read> ReadExt for R {
     fn read_u32(&mut self) -> Result<u32, io::Error> {
         let mut buf = [0u8; 4];
         self.read(&mut buf).map(|_| {
-            ((buf[0] as u32) << 24) | ((buf[1] as u32) << 16) |
-            ((buf[2] as u32) << 8) | ((buf[3] as u32) << 0)
+            ((buf[0] as u32) << 0) | ((buf[1] as u32) << 8) |
+            ((buf[2] as u32) << 16) | ((buf[3] as u32) << 24)
         })
     }
 }

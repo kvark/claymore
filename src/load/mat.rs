@@ -16,10 +16,10 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
     let mut out = Material {
         color: [1.0, 1.0, 1.0, 1.0],
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
-        blend: None,
+        blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},
     };
     match mat.textures.first() {
-        Some(ref rt) => match context.request_texture(&rt.path) {
+        Some(ref rt) => match context.request_texture(&rt.image.path) { //TODO: sRGB
             Ok(t) => {
                 fn unwrap(mode: i8) -> Result<gfx::tex::WrapMode, Error> {
                     match mode {
@@ -46,7 +46,7 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
                 let sampler = context.factory.create_sampler(sinfo);
                 out.texture = (t, Some(sampler));
             },
-            Err(e) => return Err(Error::Texture(rt.path.clone(), e)),
+            Err(e) => return Err(Error::Texture(rt.image.path.clone(), e)),
         },
         None => (),
     };

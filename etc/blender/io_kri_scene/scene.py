@@ -24,7 +24,11 @@ def cook_mat(mat,log):
 		wrap_y = ((0, 1)[it.repeat_y != 0], -1)[it.use_mirror_y]
 		textures.append({
 			'name'	: mt.name,
-			'path'	: it.image.filepath,
+			'image'	: {
+				'path': it.image.filepath,
+				'space': it.image.colorspace_settings.name,
+				'mapping': it.image.mapping,
+			},
 			'filter': (1, (2, 3)[it.use_mipmap])[it.use_interpolation],
 			'wrap'	: (wrap_x, wrap_y, 0),
 			'scale'	: list(mt.scale),
@@ -40,6 +44,7 @@ def cook_mat(mat,log):
 	return {
 		'name'		: mat.name,
 		'shader'	: kind,
+		'transparent': mat.use_transparency,
 		'data'		: {
 			'Ambient'		: ('scalar',	(mat.ambient,)),
 			'DiffuseColor'	: ('color',		list(mat.diffuse_color)),

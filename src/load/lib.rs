@@ -50,7 +50,8 @@ impl<R: gfx::Resources> Cache<R> {
 pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     pub cache: Cache<R>,
     pub factory: &'a mut F,
-    pub prefix: String,
+    pub base_path: String,
+    prefix: String,
     pub texture_black: gfx::TextureHandle<R>,
     pub sampler_point: gfx::SamplerHandle<R>,
 }
@@ -62,7 +63,7 @@ pub enum ContextError {
 }
 
 impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
-    pub fn new(factory: &'a mut F) -> Result<Context<'a, R, F>, ContextError> {
+    pub fn new(factory: &'a mut F, path: String) -> Result<Context<'a, R, F>, ContextError> {
         let tinfo = gfx::tex::TextureInfo {
             width: 1,
             height: 1,
@@ -86,6 +87,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         Ok(Context {
             cache: Cache::new(),
             factory: factory,
+            base_path: path,
             prefix: String::new(),
             texture_black: texture,
             sampler_point: sampler,
@@ -162,33 +164,34 @@ pub enum SceneError {
     Parse(scene::Error),
 }
 
-pub fn scene<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str,
-             context: &mut Context<'a, R, F>)
-             -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError> {
-    use std::io::Read;
-    info!("Loading scene from {}", path_str);
-    context.prefix = path_str.to_string();
-    let path = format!("{}.json", path_str);
-    match File::open(&path) {
-        Ok(mut file) => {
-            let mut s = String::new();
-            match file.read_to_string(&mut s) {
-                Ok(_) => match json::decode(&s) {
-                    Ok(raw) => match scene::load(raw, context) {
-                        Ok(s) => Ok(s),
-                        Err(e) => Err(SceneError::Parse(e)),
+impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
+    pub fn load_scene(&mut self, path_str: &str)
+                      -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError> {
+        use std::io::Read;
+        info!("Loading scene from {}", path_str);
+        self.prefix = format!("{}/{}", self.base_path, path_str);
+        let path = format!("{}.json", self.prefix);
+        match File::open(&path) {
+            Ok(mut file) => {
+                let mut s = String::new();
+                match file.read_to_string(&mut s) {
+                    Ok(_) => match json::decode(&s) {
+                        Ok(raw) => match scene::load(raw, self) {
+                            Ok(s) => Ok(s),
+                            Err(e) => Err(SceneError::Parse(e)),
+                        },
+                        Err(e) => Err(SceneError::Decode(e)),
                     },
-                    Err(e) => Err(SceneError::Decode(e)),
-                },
-                Err(e) => Err(SceneError::Read(e)),
-            }
-        },
-        Err(e) => Err(SceneError::Open(e)),
+                    Err(e) => Err(SceneError::Read(e)),
+                }
+            },
+            Err(e) => Err(SceneError::Open(e)),
+        }
     }
 }
 
-pub fn mesh<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str, factory: &mut F)
-            -> Result<(String, mesh::Success<R>), mesh::Error> {
+pub fn load_mesh<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str, factory: &mut F)
+                 -> Result<(String, mesh::Success<R>), mesh::Error> {
     info!("Loading mesh from {}", path_str);
     let path = format!("{}.k3mesh", path_str);
     match File::open(&path) {
