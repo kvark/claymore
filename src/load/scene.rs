@@ -24,7 +24,7 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             scale: space.scale,
             rot: {
                 let (x, y, z, w) = space.rot;
-                cgmath::Quaternion::new(w, x, y, z)
+                cgmath::Quaternion::new(w, x, y, z).normalize()
             },
             disp: {
                 let (x, y, z) = space.pos;

@@ -1,15 +1,17 @@
 use std::marker::PhantomData;
+use std::slice;
 use cgmath::{BaseFloat, Transform, Transform3};
-use id::{Array, Id};
+use id::{Array, Id, Storage};
 use gfx_scene;
 
-#[derive(Copy)]
+#[derive(Copy, Debug)]
 pub enum Parent<T> {
     None,
     Domestic(Id<Node<T>>),
     Foreign(Id<Skeleton<T>>, Id<Bone<T>>),
 }
 
+#[derive(Debug)]
 pub struct Node<T> {
     pub name : String,
     parent: Parent<T>,
@@ -17,6 +19,7 @@ pub struct Node<T> {
     pub world: T,
 }
 
+#[derive(Debug)]
 pub struct Bone<T> {
     pub name : String,
     parent: Option<Id<Bone<T>>>,
@@ -26,12 +29,14 @@ pub struct Bone<T> {
     bind_pose_root_inverse: T,
 }
 
+#[derive(Debug)]
 pub struct Skeleton<T> {
     pub name: String,
     node: Id<Node<T>>,
     bones: Array<Bone<T>>,
 }
 
+#[derive(Debug)]
 pub struct World<S, T> {
     nodes: Array<Node<T>>,
     skeletons: Array<Skeleton<T>>,
@@ -70,41 +75,35 @@ impl<S: BaseFloat, T: Transform3<S> + Clone> World<S, T> {
         })
     }
 
+    pub fn iter_nodes<'a>(&'a self) -> slice::Iter<'a, Node<T>> {
+        self.nodes.iter()
+    }
+
     pub fn update(&mut self) {
-        //TODO: need direct access to Array
-        /*for i in 0.. self.nodes.len() {
-            let (left, right) = self.nodes.split_at_mut(i);
-            let n = &mut right[0];
+        let skeletons = &mut self.skeletons;
+        self.nodes.walk_looking_back(|left, n| {
             n.world = match n.parent {
                 Parent::None => n.local.clone(),
-                Parent::Domestic(Id(pid)) => {
-                    assert!(pid < i);
-                    left[pid].world.concat(&n.local)
-                },
-                Parent::Foreign(Id(sid), Id(bid)) => {
-                    self.skeletons[sid].bones[bid].world.concat(&n.local)
-                },
+                Parent::Domestic(pid) =>
+                    left.get(pid)
+                        .world.concat(&n.local),
+                Parent::Foreign(sid, bid) =>
+                    skeletons.get(sid)
+                        .bones.get(bid)
+                        .world.concat(&n.local),
             };
-        }
+        });
 
-        //TODO: refactor to avoid a possible lag, caused by bone parenting
-
-        for s in self.skeletons.iter_mut() {
-            let Id(nid) = s.node;
-            let world = &self.nodes[nid].world;
-            for i in 0.. s.bones.len() {
-                let (left, right) = s.bones.split_at_mut(i);
-                let b = &mut right[0];
+        for s in skeletons.iter_mut() {
+            let world = &self.nodes.get(s.node).world;
+            s.bones.walk_looking_back(|left, b| {
                 let base = match b.parent {
-                    Some(Id(bid)) => {
-                        assert!(bid < i);
-                        &left[bid].world
-                    },
-                    None => world
+                    Some(bid) => &left.get(bid).world,
+                    None => world,
                 };
                 b.world = base.concat(&b.local);
-            }
-        }*/
+            })
+        }
     }
 }
 

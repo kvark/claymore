@@ -4,7 +4,7 @@ extern crate gfx;
 extern crate gfx_device_gl;
 extern crate claymore_game as game;
 
-fn main() {
+pub fn main() {
     use gfx::traits::*;
 
     env_logger::init().unwrap();
@@ -27,6 +27,7 @@ fn main() {
         // quit when Esc is pressed.
         for event in window.poll_events() {
             match event {
+                glutin::Event::Resized(w, h) => app.set_size(w as u16, h as u16),
                 glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'main,
                 glutin::Event::Closed => break 'main,
                 _ => {},

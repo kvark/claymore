@@ -21,5 +21,8 @@ git = "https://github.com/bjz/cgmath-rs"
 [dependencies.gfx]
 git = "https://github.com/gfx-rs/gfx-rs"
 
+[dependencies.gfx_scene]
+git = "https://github.com/kvark/gfx_scene"
+
 [dependencies.gfx_pipeline]
 git = "https://github.com/kvark/gfx_pipeline"

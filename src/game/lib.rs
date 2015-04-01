@@ -1,4 +1,5 @@
 extern crate gfx;
+extern crate gfx_scene;
 extern crate gfx_pipeline;
 extern crate claymore_scene as scene;
 extern crate claymore_load as load;
@@ -25,7 +26,7 @@ impl<
             let mut context = load::Context::new(device,
                 env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
                 ).unwrap();
-            let mut scene = context.load_scene("data/valefor").unwrap();
+            let mut scene = context.load_scene("data/vika").unwrap();
             scene.cameras[0].projection.aspect = width as f32 / height as f32;
             (scene, (context.texture_black.clone(), None))
         };
@@ -38,6 +39,11 @@ impl<
             scene: scene,
             pipeline: pipeline,
         }
+    }
+
+    pub fn set_size(&mut self, w: u16, h: u16) {
+        self.frame.width = w;
+        self.frame.height = h;
     }
 
     pub fn render(&mut self) -> Result<gfx::SubmitInfo<D>, gfx_pipeline::Error> {
