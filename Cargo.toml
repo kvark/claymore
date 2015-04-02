@@ -42,5 +42,4 @@ git = "https://github.com/bjz/cgmath-rs"
 git = "https://github.com/kvark/gfx_pipeline"
 
 [dev_dependencies.gfx_debug_draw]
-#git = "https://github.com/PistonDevelopers/gfx-debug-draw"
-path = "../gfx-debug-draw"
+git = "https://github.com/PistonDevelopers/gfx-debug-draw"

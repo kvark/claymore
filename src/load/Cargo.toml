@@ -19,7 +19,9 @@ git = "https://github.com/bjz/cgmath-rs"
 git = "https://github.com/gfx-rs/gfx-rs"
 
 [dependencies.piston-gfx_texture]
-git = "https://github.com/PistonDevelopers/gfx_texture"
+#git = "https://github.com/PistonDevelopers/gfx_texture"
+git = "https://github.com/kvark/gfx_texture"
+branch = "flip"
 
 [dependencies.gfx_scene]
 git = "https://github.com/kvark/gfx_scene"

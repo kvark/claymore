@@ -46,7 +46,6 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
     populate_world(&mut world, &raw.nodes, cs::space::Parent::None);
     // read camera
     let camera = {
-        use std::num::Float;
         let cam = match raw.cameras.first() {
             Some(c) => c,
             None => return Err(Error::NoCamera),

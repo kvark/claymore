@@ -451,6 +451,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		stype = 'I'
 		if nv<0x100:		stype = 'B'
 		elif nv<0x10000:	stype = 'H'
+		log.log(1,'i', 'Index format: %s' % (stype))
 		km.index = vat = Attribute('', stype, 0)
 		for face in ar_face:
 			vat.data.append( face.vi )

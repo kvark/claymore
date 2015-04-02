@@ -54,6 +54,7 @@ pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     prefix: String,
     pub texture_black: gfx::TextureHandle<R>,
     pub sampler_point: gfx::SamplerHandle<R>,
+    pub flip_textures: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -63,7 +64,9 @@ pub enum ContextError {
 }
 
 impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
-    pub fn new(factory: &'a mut F, path: String) -> Result<Context<'a, R, F>, ContextError> {
+    pub fn new(factory: &'a mut F, path: String)
+               -> Result<Context<'a, R, F>, ContextError>
+    {
         let tinfo = gfx::tex::TextureInfo {
             width: 1,
             height: 1,
@@ -91,6 +94,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             prefix: String::new(),
             texture_black: texture,
             sampler_point: sampler,
+            flip_textures: true,    // following Blender
         })
     }
 
@@ -136,8 +140,12 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             Entry::Vacant(v) => {
                 info!("Loading texture from {}", path_str);
                 let path_str = format!("{}{}", self.prefix, path_str);
-                let tex_maybe = gfx_texture::Texture::from_path(self.factory, path_str.as_ref())
-                    .map(|t| t.handle);
+                let mut settings = gfx_texture::Settings::new();
+                settings.flip_vertical = true;
+                settings.generate_mipmap = true;
+                let tex_maybe = gfx_texture::Texture::from_path(
+                    self.factory, path_str.as_ref(), &settings
+                    ).map(|t| t.handle);
                 v.insert(tex_maybe).clone()
             },
         }
