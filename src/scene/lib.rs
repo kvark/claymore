@@ -12,6 +12,8 @@ extern crate gfx_pipeline;
 
 pub mod space;
 pub use gfx_pipeline::{Material, ViewInfo};
+pub use gfx_scene as base;
+
 
 pub type Transform<S> = cgmath::Decomposed<
     S,

@@ -16,11 +16,12 @@ pub fn main() {
         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
         .build().unwrap();
     unsafe { window.make_current() };
-    let mut device = gfx_device_gl::GlDevice::new(|s| window.get_proc_address(s));
+    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
     let (w, h) = window.get_inner_size().unwrap();
 
     println!("Loading the game...");
-    let mut app = game::App::new(&mut device, w as u16, h as u16);
+    let mut app: game::App<gfx_device_gl::Device> =
+        game::App::new(&mut factory, w as u16, h as u16);
 
     println!("Rendering...");
     'main: loop {
@@ -39,6 +40,7 @@ pub fn main() {
         device.submit(buf);
         window.swap_buffers();
         device.after_frame();
+        factory.cleanup();
     }
     println!("Done.");
 }

@@ -14,6 +14,7 @@ pub enum Error {
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
             context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
     let mut out = Material {
+        visible: true,
         color: [1.0, 1.0, 1.0, 1.0],
         texture: (context.texture_black.clone(), Some(context.sampler_point.clone())),
         blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},

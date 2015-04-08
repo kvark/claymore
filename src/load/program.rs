@@ -4,9 +4,10 @@ use gfx;
 use gfx::traits::*;
 
 #[derive(Clone, Debug)]
+// https://github.com/rust-lang/rust/issues/24135
 pub enum Error {
-    Open(String, io::Error),
-    Read(io::Error),
+    Open(String, String),
+    Read(String),
     Create(gfx::ProgramError),
 }
 
@@ -19,9 +20,9 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(name: &str, factory: &mut F)
     match File::open(&path) {
         Ok(mut file) => match file.read_to_end(&mut src_vert) {
             Ok(_) => (),
-            Err(e) => return Err(Error::Read(e)),
+            Err(e) => return Err(Error::Read(e.to_string())),
         },
-        Err(e) => return Err(Error::Open(path, e)),
+        Err(e) => return Err(Error::Open(path, e.to_string())),
     }
     // fragment
     let mut src_frag = Vec::new();
@@ -29,9 +30,9 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(name: &str, factory: &mut F)
     match File::open(&path) {
         Ok(mut file) => match file.read_to_end(&mut src_frag) {
             Ok(_) => (),
-            Err(e) => return Err(Error::Read(e)),
+            Err(e) => return Err(Error::Read(e.to_string())),
         },
-        Err(e) => return Err(Error::Open(path, e)),
+        Err(e) => return Err(Error::Open(path, e.to_string())),
     }
     // program
     factory.link_program(&src_vert, &src_frag)

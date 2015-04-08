@@ -6,6 +6,7 @@ extern crate gfx_pipeline;
 extern crate gfx_device_gl;
 extern crate gfx_debug_draw;
 extern crate claymore_load;
+extern crate claymore_scene; //temp
 
 fn main() {
     use std::env;
@@ -31,27 +32,23 @@ fn main() {
         .build().unwrap();
     unsafe { window.make_current() };
     let (w, h) = window.get_inner_size().unwrap();
-    let mut graphics = gfx_device_gl::GlDevice::new(|s| window.get_proc_address(s))
+    let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s))
                                     .into_graphics();
 
     let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
-        *graphics.device.get_capabilities(),
-        &mut graphics.device,
-        [w, h], 64, None, None
-        ).ok().unwrap();
+        &mut graphics, [w, h], 64, None, None).ok().unwrap();
 
     println!("Loading scene: {}", path);
     let (mut scene, texture) = {
-        let mut context = claymore_load::Context::new(&mut graphics.device,
+        let mut context = claymore_load::Context::new(&mut graphics.factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
             ).unwrap();
         let scene = context.load_scene(&path).unwrap();
         (scene, (context.texture_black.clone(), None))
     };
 
-    let mut pipeline = gfx_pipeline::forward::Pipeline::new(
-        &mut graphics.device, texture
-        ).unwrap();
+    let mut pipeline = gfx_pipeline::forward::Pipeline::<gfx_device_gl::Device>::new(
+        &mut graphics.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
     let mut frame = gfx::Frame::new(w as u16, h as u16);
 
@@ -89,11 +86,15 @@ fn main() {
         let buf = pipeline.render(&scene, &camera, &frame).unwrap();
         graphics.device.submit(buf);
 
-        debug_renderer.update(&mut graphics.device);
-        let camatrix = camera.projection.to_matrix4().mul_m(
-            &scene.world.get_node(camera.node).world.to_matrix4()
-            ).into_fixed();
-        debug_renderer.render(&mut graphics, &frame, camatrix);
+        //debug_renderer.render(&mut graphics, &frame,
+        //    camera.get_view_projection(&scene.world));
+        {
+            use cgmath::FixedArray;
+            use claymore_scene::base::World;
+            let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
+            let proj_mx = camera.projection.to_matrix4().mul_m(&cam_inv.to_matrix4()).into_fixed();
+            debug_renderer.render(&mut graphics, &frame, proj_mx);
+        }
 
         graphics.end_frame();
         window.swap_buffers();

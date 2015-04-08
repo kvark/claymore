@@ -4,7 +4,7 @@ use cgmath::{BaseFloat, Transform, Transform3};
 use id::{Array, Id, Storage};
 use gfx_scene;
 
-#[derive(Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Parent<T> {
     None,
     Domestic(Id<Node<T>>),

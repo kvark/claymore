@@ -1,4 +1,4 @@
-#![feature(collections, convert, unsafe_destructor)]
+#![feature(collections)]
 
 #[macro_use]
 extern crate log;
@@ -77,7 +77,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         };
         let image_info = tinfo.to_image_info();
         let texture = match factory.create_texture(tinfo) {
-            Ok(t) => match factory.update_texture(&t, &image_info, &[0u8, 0, 0, 0]) {
+            Ok(t) => match factory.update_texture(&t, &image_info, &[0u8, 0, 0, 0], None) {
                 Ok(()) => t,
                 Err(e) => return Err(ContextError::Texture(e)),
             },
@@ -144,7 +144,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 settings.flip_vertical = true;
                 settings.generate_mipmap = true;
                 let tex_maybe = gfx_texture::Texture::from_path(
-                    self.factory, path_str.as_ref(), &settings
+                    self.factory, path_str, &settings
                     ).map(|t| t.handle);
                 v.insert(tex_maybe).clone()
             },
@@ -173,8 +173,9 @@ pub enum SceneError {
 }
 
 impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
-    pub fn load_scene(&mut self, path_str: &str)
-                      -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError> {
+    pub fn load_scene_into(&mut self, scene: &mut claymore_scene::Scene<R, scene::Scalar>,
+                           path_str: &str) -> Result<(), SceneError>
+    {
         use std::io::Read;
         info!("Loading scene from {}", path_str);
         self.prefix = format!("{}/{}", self.base_path, path_str);
@@ -184,7 +185,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 let mut s = String::new();
                 match file.read_to_string(&mut s) {
                     Ok(_) => match json::decode(&s) {
-                        Ok(raw) => match scene::load(raw, self) {
+                        Ok(raw) => match scene::load_into(scene, raw, self) {
                             Ok(s) => Ok(s),
                             Err(e) => Err(SceneError::Parse(e)),
                         },
@@ -194,6 +195,16 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 }
             },
             Err(e) => Err(SceneError::Open(e)),
+        }
+    }
+
+    pub fn load_scene(&mut self, path_str: &str)
+                      -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError>
+    {
+        let mut scene = gfx_scene::Scene::new(claymore_scene::space::World::new());
+        match self.load_scene_into(&mut scene, path_str) {
+            Ok(()) => Ok(scene),
+            Err(e) => Err(e),
         }
     }
 }

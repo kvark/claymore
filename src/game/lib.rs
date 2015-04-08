@@ -13,17 +13,13 @@ pub struct App<D: gfx::Device> {
     pipeline: Pipeline<D>,
 }
 
-impl<
-    R: gfx::Resources,
-    C: gfx::CommandBuffer<R>,
-    D: gfx::Device<Resources = R, CommandBuffer = C> + gfx::Factory<R>
-> App<D> {
-    pub fn new(device: &mut D, width: u16, height: u16) -> App<D>
-    {
+impl<D: gfx::Device> App<D> {
+    pub fn new<F: gfx::Factory<D::Resources>>(factory: &mut F,
+               width: u16, height: u16) -> App<D> {
         use std::env;
         // load the scene
         let (scene, texture) = {
-            let mut context = load::Context::new(device,
+            let mut context = load::Context::new(factory,
                 env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
                 ).unwrap();
             let mut scene = context.load_scene("data/vika").unwrap();
@@ -31,7 +27,7 @@ impl<
             (scene, (context.texture_black.clone(), None))
         };
         // create the pipeline
-        let mut pipeline = Pipeline::new(device, texture).unwrap();
+        let mut pipeline = Pipeline::new(factory, texture).unwrap();
         pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
         // done
         App {

@@ -113,7 +113,6 @@ impl<'a, R: io::Read> Chunk<'a, R> {
     }
 }
 
-#[unsafe_destructor]
 impl<'a, R: io::Read> Drop for Chunk<'a, R> {
     fn drop(&mut self) {
         debug!("Leaving chunk");

@@ -14,10 +14,12 @@ pub enum Error {
     Material(String, super::mat::Error),
 }
 
-pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
-            raw: json::Scene, context: &mut super::Context<R, F>)
-            -> Result<cs::Scene<R, Scalar>, Error> {
+pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
+                 this: &mut cs::Scene<R, Scalar>, raw: json::Scene,
+                 context: &mut super::Context<R, F>) -> Result<(), Error>
+{
     use std::collections::hash_map::{HashMap, Entry};
+
     fn read_space<S: cgmath::BaseFloat>(space: &json::Space<S>)
                   -> cs::Transform<S> {
         cgmath::Decomposed {
@@ -32,6 +34,7 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             },
         }
     }
+
     fn populate_world(world: &mut cs::World<Scalar>,
                       raw_nodes: &[json::Node],
                       parent: cs::space::Parent<cs::Transform<Scalar>>) {
@@ -41,16 +44,16 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             populate_world(world, &n.children, cs::space::Parent::Domestic(nid));
         }
     }
+
     // create world
-    let mut world = cs::space::World::new();
-    populate_world(&mut world, &raw.nodes, cs::space::Parent::None);
+    populate_world(&mut this.world, &raw.nodes, cs::space::Parent::None);
     // read camera
     let camera = {
         let cam = match raw.cameras.first() {
             Some(c) => c,
             None => return Err(Error::NoCamera),
         };
-        let node = match world.find_node(&cam.node) {
+        let node = match this.world.find_node(&cam.node) {
             Some(n) => n,
             None => return Err(Error::MissingNode(cam.node.to_string())),
         };
@@ -68,13 +71,12 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             projection: proj,
         }
     };
-    // read materials
+    this.cameras.push(camera);
+
+    // read entities and materials
     let mut material_map: HashMap<String, cs::Material<R>> = HashMap::new();
-    // read entities
-    let mut scene = gfx_scene::Scene::new(world);
-    scene.cameras.push(camera);
     for ent in raw.entities.iter() {
-        let node = match scene.world.find_node(&ent.node) {
+        let node = match this.world.find_node(&ent.node) {
             Some(n) => n,
             None => return Err(Error::MissingNode(ent.node.clone())),
         };
@@ -98,7 +100,7 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         };
         let bound_min = cgmath::Point3::new(-100.0, -100.0, -100.0);
         let bound_max = cgmath::Point3::new(1000.0, 1000.0, 1000.0);
-        scene.entities.push(gfx_scene::Entity {
+        this.entities.push(gfx_scene::Entity {
             name: ent.mesh.clone(),
             material: material,
             mesh: mesh,
@@ -109,5 +111,5 @@ pub fn load<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         });
     }
     // done
-    Ok(scene)
+    Ok(())
 }
