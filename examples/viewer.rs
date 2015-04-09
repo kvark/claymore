@@ -12,36 +12,48 @@ type MousePos = (i32, i32);
 
 struct Control {
     rotate_speed: f32,
+    move_speed: f32,
     zoom_speed: f32,
-    base: Option<(MousePos, claymore_scene::Transform<f32>)>,
+    rotate_base: Option<(MousePos, claymore_scene::Transform<f32>)>,
+    move_base: Option<(MousePos, cgmath::Vector3<f32>)>,
     last_pos: MousePos,
     space: claymore_scene::Transform<f32>,
 }
 
 impl Control {
-    pub fn new(rot_speed: f32, zoom_speed: f32,
+    pub fn new(rot_speed: f32, move_speed: f32, zoom_speed: f32,
                space: claymore_scene::Transform<f32>) -> Control {
         Control {
             rotate_speed: rot_speed,
+            move_speed: move_speed,
             zoom_speed: zoom_speed,
-            base: None,
+            rotate_base: None,
+            move_base: None,
             last_pos: (0, 0),
             space: space,
         }
     }
 
-    pub fn capture(&mut self, transform: &claymore_scene::Transform<f32>) {
-        self.base = Some((self.last_pos, transform.clone()));
+    pub fn rot_capture(&mut self, transform: &claymore_scene::Transform<f32>) {
+        self.rotate_base = Some((self.last_pos, transform.clone()));
     }
 
-    pub fn release(&mut self) {
-        self.base = None;
+    pub fn rot_release(&mut self) {
+        self.rotate_base = None;
+    }
+
+    pub fn move_capture(&mut self, transform: &claymore_scene::Transform<f32>) {
+        self.move_base = Some((self.last_pos, transform.disp));
+    }
+
+    pub fn move_release(&mut self) {
+        self.move_base = None;
     }
 
     pub fn position(&mut self, coords: MousePos,
                     transform: &mut claymore_scene::Transform<f32>) {
         self.last_pos = coords;
-        match self.base {
+        match self.rotate_base {
             Some((ref base_pos, ref base_transform)) => {
                 use cgmath::Transform;
                 // p' = Mp * Tc^ * (Tr * Rz * Tr^) * p
@@ -59,13 +71,22 @@ impl Control {
             },
             None => (),
         }
+        match self.move_base {
+            Some((base_pos, ref base_disp)) => {
+                use cgmath::{Vector, Rotation};
+                let local_vector = cgmath::vec3(
+                    -(coords.0 - base_pos.0) as f32,
+                    (coords.1 - base_pos.1) as f32,
+                    0.0).mul_s(self.move_speed);
+                let cam_vector = transform.rot.rotate_vector(&local_vector);
+                transform.disp = base_disp.add_v(&cam_vector);
+            },
+            None => (),
+        }
     }
 
     pub fn wheel(&mut self, shift: i32, transform: &mut claymore_scene::Transform<f32>) {
         use cgmath::{Vector, Transform};
-        if self.base.is_some() {
-            return
-        }
         let vector = transform.transform_vector(&cgmath::vec3(0.0, 0.0, 1.0));
         transform.disp.add_self_v(&vector.mul_s(shift as f32 * -self.zoom_speed));
     }
@@ -117,7 +138,7 @@ fn main() {
     let mut control = {
         use claymore_scene::base::World;
         let target_node = scene.entities[0].node;
-        Control::new(0.005, 0.5, scene.world.get_transform(&target_node))
+        Control::new(0.005, 0.01, 0.5, scene.world.get_transform(&target_node))
     };
 
     println!("Rendering...");
@@ -134,9 +155,13 @@ fn main() {
                     break 'main,
                 glutin::Event::Closed => break 'main,
                 glutin::Event::MouseInput(glutin::ElementState::Pressed, glutin::MouseButton::Left) =>
-                    control.capture(&scene.world.get_node(camera.node).local),
+                    control.rot_capture(&scene.world.get_node(camera.node).local),
                 glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) =>
-                    control.release(),
+                    control.rot_release(),
+                glutin::Event::MouseInput(glutin::ElementState::Pressed, glutin::MouseButton::Middle) =>
+                    control.move_capture(&scene.world.get_node(camera.node).local),
+                glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Middle) =>
+                    control.move_release(),
                 glutin::Event::MouseMoved(coords) =>
                     control.position(coords, &mut scene.world.mut_node(camera.node).local),
                 glutin::Event::MouseWheel(shift) =>
