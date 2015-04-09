@@ -78,16 +78,8 @@ fn main() {
     use gfx::traits::*;
     use gfx_pipeline::Pipeline;
 
-    let path = match env::args().nth(1) {
-        Some(p) => p,
-        None => {
-            println!("Call as 'viewer <path_to_scene>`");
-            return
-        }
-    };
-
     env_logger::init().unwrap();
-    println!("Initializing the window...");
+    println!("Creating the window...");
 
     let window = glutin::WindowBuilder::new()
         .with_title("Scene viewer".to_string())
@@ -102,15 +94,19 @@ fn main() {
     let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
         &mut graphics, [w, h], 64, None, None).ok().unwrap();
 
-    println!("Loading scene: {}", path);
     let (mut scene, texture) = {
         let mut context = claymore_load::Context::new(&mut graphics.factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
             ).unwrap();
-        let scene = context.load_scene(&path).unwrap();
+        let mut scene = context.create_scene();
+        for path in env::args().skip(1) {
+            println!("Loading scene: {}", path);
+            context.extend_scene(&mut scene, &path).unwrap();
+        }
         (scene, (context.texture_black.clone(), None))
     };
 
+    println!("Initializing the graphics...");
     let mut pipeline = gfx_pipeline::forward::Pipeline::<gfx_device_gl::Device>::new(
         &mut graphics.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
@@ -165,6 +161,7 @@ fn main() {
         let buf = pipeline.render(&scene, &camera, &frame).unwrap();
         graphics.device.submit(buf);
 
+        // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
         //debug_renderer.render(&mut graphics, &frame,
         //    camera.get_view_projection(&scene.world));
         if true {
