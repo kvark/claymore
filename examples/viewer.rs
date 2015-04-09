@@ -174,13 +174,13 @@ fn main() {
         let len = 1f32;
 
         for node in scene.world.iter_nodes() {
-            let r = node.world.transform_vector(&vec3(0.0, 0.0, 0.0)).into_fixed();
-            let x = node.world.transform_vector(&vec3(len, 0.0, 0.0)).into_fixed();
-            let y = node.world.transform_vector(&vec3(0.0, len, 0.0)).into_fixed();
-            let z = node.world.transform_vector(&vec3(0.0, 0.0, len)).into_fixed();
-            debug_renderer.draw_line(r, x, [1.0, 0.0, 0.0, 1.0]);
-            debug_renderer.draw_line(r, y, [0.0, 1.0, 0.0, 1.0]);
-            debug_renderer.draw_line(r, z, [0.0, 0.0, 1.0, 1.0]);
+            let r = node.world.transform_as_point(&vec3(0.0, 0.0, 0.0)).into_fixed();
+            let x = node.world.transform_as_point(&vec3(len, 0.0, 0.0)).into_fixed();
+            let y = node.world.transform_as_point(&vec3(0.0, len, 0.0)).into_fixed();
+            let z = node.world.transform_as_point(&vec3(0.0, 0.0, len)).into_fixed();
+            debug_renderer.draw_line(r, x, [1.0, 0.0, 0.0, 0.5]);
+            debug_renderer.draw_line(r, y, [0.0, 1.0, 0.0, 0.5]);
+            debug_renderer.draw_line(r, z, [0.0, 0.0, 1.0, 0.5]);
         }
 
         let buf = pipeline.render(&scene, &camera, &frame).unwrap();
