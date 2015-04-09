@@ -21,6 +21,7 @@ use std::collections::hash_map::{HashMap, Entry};
 use std::io;
 use std::fs::File;
 use rustc_serialize::json;
+use claymore_scene as cs;
 
 pub use self::scene::Scalar;
 
@@ -173,7 +174,8 @@ pub enum SceneError {
 }
 
 impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
-    pub fn load_scene_into(&mut self, scene: &mut claymore_scene::Scene<R, scene::Scalar>,
+    pub fn load_scene_into(&mut self, scene: &mut cs::Scene<R, Scalar>,
+                           global_parent: cs::Parent<Scalar>,
                            path_str: &str) -> Result<(), SceneError>
     {
         use std::io::Read;
@@ -185,7 +187,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 let mut s = String::new();
                 match file.read_to_string(&mut s) {
                     Ok(_) => match json::decode(&s) {
-                        Ok(raw) => match scene::load_into(scene, raw, self) {
+                        Ok(raw) => match scene::load_into(scene, global_parent, raw, self) {
                             Ok(s) => Ok(s),
                             Err(e) => Err(SceneError::Parse(e)),
                         },
@@ -198,14 +200,30 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         }
     }
 
+    pub fn create_scene(&self) -> cs::Scene<R, Scalar> {
+        gfx_scene::Scene::new(cs::space::World::new())
+    }
+
     pub fn load_scene(&mut self, path_str: &str)
-                      -> Result<claymore_scene::Scene<R, scene::Scalar>, SceneError>
+                      -> Result<cs::Scene<R, Scalar>, SceneError>
     {
-        let mut scene = gfx_scene::Scene::new(claymore_scene::space::World::new());
-        match self.load_scene_into(&mut scene, path_str) {
+        let mut scene = self.create_scene();
+        match self.load_scene_into(&mut scene, cs::space::Parent::None, path_str) {
             Ok(()) => Ok(scene),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn extend_scene(&mut self, scene: &mut cs::Scene<R, Scalar>, path_str: &str)
+                        -> Result<cs::NodeId<Scalar>, SceneError>
+    {
+        let nid = scene.world.add_node(
+            path_str.to_string(),
+            cs::space::Parent::None,
+            cgmath::Transform::identity()
+        );
+        self.load_scene_into(scene, cs::space::Parent::Domestic(nid), path_str)
+            .map(|_| nid)
     }
 }
 

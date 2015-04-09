@@ -15,8 +15,9 @@ pub enum Error {
 }
 
 pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
-                 this: &mut cs::Scene<R, Scalar>, raw: json::Scene,
-                 context: &mut super::Context<R, F>) -> Result<(), Error>
+                 this: &mut cs::Scene<R, Scalar>, global_parent: cs::Parent<Scalar>,
+                 raw: json::Scene, context: &mut super::Context<R, F>)
+                 -> Result<(), Error>
 {
     use std::collections::hash_map::{HashMap, Entry};
 
@@ -46,7 +47,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
     }
 
     // create world
-    populate_world(&mut this.world, &raw.nodes, cs::space::Parent::None);
+    populate_world(&mut this.world, &raw.nodes, global_parent);
     // read camera
     let camera = {
         let cam = match raw.cameras.first() {

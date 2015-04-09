@@ -21,15 +21,13 @@ pub type Transform<S> = cgmath::Decomposed<
     cgmath::Quaternion<S>
 >;
 
+pub type Parent<S> = space::Parent<Transform<S>>;
 pub type World<S> = space::World<S, Transform<S>>;
 pub type Node<S> = space::Node<Transform<S>>;
+pub type NodeId<S> = id::Id<space::Node<Transform<S>>>;
 pub type Skeleton<S> = space::Skeleton<Transform<S>>;
 pub type Projection<S> = cgmath::PerspectiveFov<S, cgmath::Rad<S>>;
-
-pub type Camera<S> = gfx_scene::Camera<
-    Projection<S>,
-    id::Id<space::Node<Transform<S>>>,
->;
+pub type Camera<S> = gfx_scene::Camera<Projection<S>, NodeId<S>>;
 
 pub type Scene<R, S> = gfx_scene::Scene<R,
     gfx_pipeline::Material<R>,
