@@ -20,7 +20,15 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
         blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},
     };
     match mat.textures.first() {
-        Some(ref rt) => match context.request_texture(&rt.image.path) { //TODO: sRGB
+        Some(ref rt) => match context.request_texture(&rt.image.path,
+            match rt.image.space.as_ref() {
+                "Linear" => false,
+                "sRGB" => true,
+                other => {
+                    warn!("Unknown color space: {}", other);
+                    false
+                }
+            }) {
             Ok(t) => {
                 fn unwrap(mode: i8) -> Result<gfx::tex::WrapMode, Error> {
                     match mode {

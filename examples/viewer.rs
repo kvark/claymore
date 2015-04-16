@@ -4,6 +4,7 @@ extern crate glutin;
 extern crate gfx;
 extern crate gfx_pipeline;
 extern crate gfx_device_gl;
+extern crate gfx_window_glutin;
 extern crate gfx_debug_draw;
 extern crate claymore_load;
 extern crate claymore_scene; //temp
@@ -107,16 +108,15 @@ fn main() {
         .with_vsync()
         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
         .build().unwrap();
-    unsafe { window.make_current() };
-    let (w, h) = window.get_inner_size().unwrap();
-    let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s))
-                                    .into_graphics();
+    let mut canvas = gfx_window_glutin::init(window).into_canvas();
+    let (w, h) = canvas.output.get_size();
 
     let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
-        &mut graphics, [w, h], 64, None, None).ok().unwrap();
+        &mut canvas.device, &mut canvas.factory, [w, h], 64, None, None
+        ).ok().unwrap();
 
     let (mut scene, texture) = {
-        let mut context = claymore_load::Context::new(&mut graphics.factory,
+        let mut context = claymore_load::Context::new(&mut canvas.factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
             ).unwrap();
         let mut scene = context.create_scene();
@@ -129,9 +129,8 @@ fn main() {
 
     println!("Initializing the graphics...");
     let mut pipeline = gfx_pipeline::forward::Pipeline::<gfx_device_gl::Device>::new(
-        &mut graphics.factory, texture).unwrap();
+        &mut canvas.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
-    let mut frame = gfx::Frame::new(w as u16, h as u16);
 
     let mut camera = scene.cameras[0].clone();
     camera.projection.aspect = w as f32 / h as f32;
@@ -145,11 +144,7 @@ fn main() {
     'main: loop {
         for event in window.poll_events() {
             match event {
-                glutin::Event::Resized(w, h) => {
-                    frame.width = w as u16;
-                    frame.height = h as u16;
-                    debug_renderer.resize(w, h);
-                },
+                glutin::Event::Resized(w, h) => debug_renderer.resize(w, h),
                 glutin::Event::KeyboardInput(_, _,
                     Some(glutin::VirtualKeyCode::Escape)) =>
                     break 'main,
@@ -183,8 +178,8 @@ fn main() {
             debug_renderer.draw_line(r, z, [0.0, 0.0, 1.0, 0.5]);
         }
 
-        let buf = pipeline.render(&scene, &camera, &frame).unwrap();
-        graphics.device.submit(buf);
+        let buf = pipeline.render(&scene, &camera, &canvas.output).unwrap();
+        canvas.device.submit(buf);
 
         // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
         //debug_renderer.render(&mut graphics, &frame,
@@ -194,12 +189,10 @@ fn main() {
             use claymore_scene::base::World;
             let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
             let proj_mx = camera.projection.to_matrix4().mul_m(&cam_inv.to_matrix4()).into_fixed();
-            debug_renderer.render(&mut graphics, &frame, proj_mx);
+            debug_renderer.render(&mut canvas.renderer, &canvas.factory, &canvas.output, proj_mx);
         }
 
-        graphics.end_frame();
-        window.swap_buffers();
-        graphics.device.after_frame();
+        canvas.present();
     }
     println!("Done.");
 }

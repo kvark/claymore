@@ -134,7 +134,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         }
     }
 
-    pub fn request_texture(&mut self, path_str: &str)
+    pub fn request_texture(&mut self, path_str: &str, srgb: bool,)
                            -> Result<gfx::TextureHandle<R>, TextureError> {
         match self.cache.textures.entry(path_str.to_string()) {
             Entry::Occupied(v) => v.get().clone(),
@@ -143,6 +143,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 let path_str = format!("{}{}", self.prefix, path_str);
                 let mut settings = gfx_texture::Settings::new();
                 settings.flip_vertical = true;
+                settings.convert_gamma = srgb;
                 settings.generate_mipmap = true;
                 let tex_maybe = gfx_texture::Texture::from_path(
                     self.factory, path_str, &settings
