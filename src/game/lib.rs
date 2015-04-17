@@ -13,7 +13,7 @@ pub struct App<D: gfx::Device> {
 }
 
 impl<D: gfx::Device> App<D> {
-    pub fn new<F: gfx::Factory<D::Resources>>(factory: &mut F) -> App<D> {
+    pub fn new<F: gfx::Factory<D::Resources>>(device: &D, factory: &mut F) -> App<D> {
         use std::env;
         // load the scene
         let (scene, texture) = {
@@ -24,7 +24,7 @@ impl<D: gfx::Device> App<D> {
             (scene, (context.texture_black.clone(), None))
         };
         // create the pipeline
-        let mut pipeline = Pipeline::new(factory, texture).unwrap();
+        let mut pipeline = Pipeline::new(device, factory, texture).unwrap();
         pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
         // done
         App {

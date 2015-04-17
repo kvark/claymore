@@ -1,7 +1,6 @@
 extern crate env_logger;
 extern crate glutin;
 extern crate gfx;
-extern crate gfx_device_gl;
 extern crate gfx_window_glutin;
 extern crate claymore_game as game;
 
@@ -19,8 +18,7 @@ pub fn main() {
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
 
     println!("Loading the game...");
-    let mut app: game::App<gfx_device_gl::Device> =
-        game::App::new(&mut canvas.factory);
+    let mut app = game::App::new(&canvas.device, &mut canvas.factory);
 
     println!("Rendering...");
     'main: loop {

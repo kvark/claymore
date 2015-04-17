@@ -3,7 +3,6 @@ extern crate cgmath;
 extern crate glutin;
 extern crate gfx;
 extern crate gfx_pipeline;
-extern crate gfx_device_gl;
 extern crate gfx_window_glutin;
 extern crate gfx_debug_draw;
 extern crate claymore_load;
@@ -111,8 +110,8 @@ fn main() {
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
     let (w, h) = canvas.output.get_size();
 
-    let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
-        &mut canvas.device, &mut canvas.factory, [w, h], 64, None, None
+    let mut debug_renderer = gfx_debug_draw::DebugRenderer::new_canvas(
+        &mut canvas, [w as u32, h as u32], 64, None, None
         ).ok().unwrap();
 
     let (mut scene, texture) = {
@@ -128,8 +127,8 @@ fn main() {
     };
 
     println!("Initializing the graphics...");
-    let mut pipeline = gfx_pipeline::forward::Pipeline::<gfx_device_gl::Device>::new(
-        &mut canvas.factory, texture).unwrap();
+    let mut pipeline = gfx_pipeline::forward::Pipeline::new(
+        &canvas.device, &mut canvas.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
     let mut camera = scene.cameras[0].clone();
@@ -142,7 +141,7 @@ fn main() {
 
     println!("Rendering...");
     'main: loop {
-        for event in window.poll_events() {
+        for event in canvas.output.window.poll_events() {
             match event {
                 glutin::Event::Resized(w, h) => debug_renderer.resize(w, h),
                 glutin::Event::KeyboardInput(_, _,
@@ -189,7 +188,7 @@ fn main() {
             use claymore_scene::base::World;
             let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
             let proj_mx = camera.projection.to_matrix4().mul_m(&cam_inv.to_matrix4()).into_fixed();
-            debug_renderer.render(&mut canvas.renderer, &canvas.factory, &canvas.output, proj_mx);
+            debug_renderer.render_canvas(&mut canvas, proj_mx);
         }
 
         canvas.present();
