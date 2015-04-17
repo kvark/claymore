@@ -76,7 +76,7 @@ impl Control {
                 use cgmath::{Vector, Rotation};
                 let local_vector = cgmath::vec3(
                     -(coords.0 - base_pos.0) as f32,
-                    (coords.1 - base_pos.1) as f32,
+                     (coords.1 - base_pos.1) as f32,
                     0.0).mul_s(self.move_speed);
                 let cam_vector = transform.rot.rotate_vector(&local_vector);
                 transform.disp = base_disp.add_v(&cam_vector);
@@ -108,11 +108,9 @@ fn main() {
         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
         .build().unwrap();
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
-    let (w, h) = canvas.output.get_size();
 
-    let mut debug_renderer = gfx_debug_draw::DebugRenderer::new_canvas(
-        &mut canvas, [w as u32, h as u32], 64, None, None
-        ).ok().unwrap();
+    let mut debug_renderer = gfx_debug_draw::DebugRenderer::from_canvas(
+        &mut canvas, 64, None, None).ok().unwrap();
 
     let (mut scene, texture) = {
         let mut context = claymore_load::Context::new(&mut canvas.factory,
@@ -131,8 +129,14 @@ fn main() {
         &canvas.device, &mut canvas.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
-    let mut camera = scene.cameras[0].clone();
-    camera.projection.aspect = w as f32 / h as f32;
+    let mut camera = match scene.cameras.first() {
+        Some(cam) => cam.clone(),
+        None => {
+            println!("No cameras found in any of the scenes. Usage:");
+            println!("viewer <path_to_scene1> <path_to_scene2> ...");
+            return;
+        }
+    };
     let mut control = {
         use claymore_scene::base::World;
         let target_node = scene.entities[0].node;
@@ -142,23 +146,22 @@ fn main() {
     println!("Rendering...");
     'main: loop {
         for event in canvas.output.window.poll_events() {
+            use glutin::{Event, ElementState, MouseButton, VirtualKeyCode};
             match event {
-                glutin::Event::Resized(w, h) => debug_renderer.resize(w, h),
-                glutin::Event::KeyboardInput(_, _,
-                    Some(glutin::VirtualKeyCode::Escape)) =>
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) =>
                     break 'main,
-                glutin::Event::Closed => break 'main,
-                glutin::Event::MouseInput(glutin::ElementState::Pressed, glutin::MouseButton::Left) =>
+                Event::Closed => break 'main,
+                Event::MouseInput(ElementState::Pressed, MouseButton::Left) =>
                     control.rot_capture(&scene.world.get_node(camera.node).local),
-                glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Left) =>
+                Event::MouseInput(ElementState::Released, MouseButton::Left) =>
                     control.rot_release(),
-                glutin::Event::MouseInput(glutin::ElementState::Pressed, glutin::MouseButton::Middle) =>
+                Event::MouseInput(ElementState::Pressed, MouseButton::Middle) =>
                     control.move_capture(&scene.world.get_node(camera.node).local),
-                glutin::Event::MouseInput(glutin::ElementState::Released, glutin::MouseButton::Middle) =>
+                Event::MouseInput(ElementState::Released, MouseButton::Middle) =>
                     control.move_release(),
-                glutin::Event::MouseMoved(coords) =>
+                Event::MouseMoved(coords) =>
                     control.position(coords, &mut scene.world.mut_node(camera.node).local),
-                glutin::Event::MouseWheel(shift) =>
+                Event::MouseWheel(shift) =>
                     control.wheel(shift, &mut scene.world.mut_node(camera.node).local),
                 _ => {},
             }
@@ -177,6 +180,7 @@ fn main() {
             debug_renderer.draw_line(r, z, [0.0, 0.0, 1.0, 0.5]);
         }
 
+        camera.projection.aspect = canvas.get_aspect_ratio();
         let buf = pipeline.render(&scene, &camera, &canvas.output).unwrap();
         canvas.device.submit(buf);
 

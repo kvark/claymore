@@ -9,6 +9,9 @@ authors = [
 name = "claymore_game"
 path = "lib.rs"
 
+[dependencies]
+rustc-serialize = "*"
+
 [dependencies.claymore-scene]
 path = "../scene"
 

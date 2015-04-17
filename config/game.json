@@ -1,0 +1,31 @@
+{
+	"name": "Claymore",
+	"characters": {
+		"vika": {
+			"scene": "data/vika",
+			"health": 30
+		},
+		"valefor": {
+			"scene": "data/valefor",
+			"health": 100
+		}
+	},
+	"level": {
+		"scene": "data/level",
+		"grid": {
+			"center": [0, 0, 0],
+			"count": [10, 10],
+			"size": [1, 1, 0.01]
+		},
+		"characters": {
+			"vika": {
+				"cell": [-4, -4],
+				"team": 1
+			},
+			"valefor": {
+				"cell": [4, 4],
+				"team": 2
+			}
+		}
+	}
+}
