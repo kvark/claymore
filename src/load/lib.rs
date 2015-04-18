@@ -53,7 +53,7 @@ pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     pub factory: &'a mut F,
     pub base_path: String,
     prefix: String,
-    pub texture_black: gfx::TextureHandle<R>,
+    pub texture_white: gfx::TextureHandle<R>,
     pub sampler_point: gfx::SamplerHandle<R>,
     pub flip_textures: bool,
 }
@@ -68,20 +68,9 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
     pub fn new(factory: &'a mut F, path: String)
                -> Result<Context<'a, R, F>, ContextError>
     {
-        let tinfo = gfx::tex::TextureInfo {
-            width: 1,
-            height: 1,
-            depth: 1,
-            levels: 1,
-            format: gfx::tex::RGBA8,
-            kind: gfx::tex::TextureKind::Texture2D,
-        };
-        let image_info = tinfo.to_image_info();
-        let texture = match factory.create_texture(tinfo) {
-            Ok(t) => match factory.update_texture(&t, &image_info, &[0u8, 0, 0, 0], None) {
-                Ok(()) => t,
-                Err(e) => return Err(ContextError::Texture(e)),
-            },
+        use gfx::traits::FactoryExt;
+        let texture = match factory.create_texture_rgba8_static(1, 1, &[0xFFFFFFFF]) {
+            Ok(t) => t,
             Err(e) => return Err(ContextError::Texture(e)),
         };
         let sampler = factory.create_sampler(gfx::tex::SamplerInfo::new(
@@ -93,7 +82,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             factory: factory,
             base_path: path,
             prefix: String::new(),
-            texture_black: texture,
+            texture_white: texture,
             sampler_point: sampler,
             flip_textures: true,    // following Blender
         })
@@ -140,13 +129,13 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {
                 info!("Loading texture from {}", path_str);
-                let path_str = format!("{}{}", self.prefix, path_str);
+                let path = format!("{}{}", self.prefix, path_str);
                 let mut settings = gfx_texture::Settings::new();
                 settings.flip_vertical = true;
                 settings.convert_gamma = srgb;
                 settings.generate_mipmap = true;
                 let tex_maybe = gfx_texture::Texture::from_path(
-                    self.factory, path_str, &settings
+                    self.factory, path, &settings
                     ).map(|t| t.handle);
                 v.insert(tex_maybe).clone()
             },

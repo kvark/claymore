@@ -41,7 +41,7 @@ impl<D: gfx::Device> App<D> {
                     None => (),
                 }
             }
-            (scene, (context.texture_black.clone(), None))
+            (scene, (context.texture_white.clone(), None))
         };
         // create the pipeline
         let mut pipeline = Pipeline::new(device, factory, texture).unwrap();

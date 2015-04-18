@@ -243,7 +243,7 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 	bDegrees = (sc.unit_settings.system_rotation == 'DEGREES')
 	if not bDegrees:
 		#it's easier to convert on loading than here
-		log.log(1, 'w','Radians are not supported')
+		log.log(1, 'w', 'Radians are not supported')
 	if sc.use_gravity:
 		gv = sc.gravity
 		log.log(1, 'i', 'gravity: (%.1f,%.1f,%.1f)' % (gv.x, gv.y, gv.z))
@@ -269,14 +269,16 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 		if log.stop:	break
 		# parse node
 		if len(ob.modifiers):
-			log.log(1,'w','Unapplied modifiers detected on object %s' % (ob.name))
+			log.log(1, 'w', 'Unapplied modifiers detected on object %s' % (ob.name))
 		current = {}
 		if ob.type == 'MESH':
 			if out_mesh != None:
-				(_,face_num) = save_mesh(out_mesh,ob,log)
+				(_, face_num) = save_mesh(out_mesh, ob, log)
 			else:
-				(_,face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
+				(_, face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
 			offset = 0
+			if ob.data.materials == []:
+				log.log(1, 'w', 'No materials detected')
 			for fn, m in zip(face_num, ob.data.materials):
 				if not fn: break
 				s = (m.name	if m else '')

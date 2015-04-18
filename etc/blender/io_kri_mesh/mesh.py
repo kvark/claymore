@@ -222,7 +222,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		face_num[face.mat] += 1
 
 	if no_output:
-		return (None,face_num)
+		return (None, face_num)
 
 	# 2: fill sparsed vertex array
 	avg,set_vert,set_surf = 0.0,{},{}
