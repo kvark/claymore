@@ -29,6 +29,12 @@ pub type Skeleton<S> = space::Skeleton<Transform<S>>;
 pub type Projection<S> = cgmath::PerspectiveFov<S, cgmath::Rad<S>>;
 pub type Camera<S> = gfx_scene::Camera<Projection<S>, NodeId<S>>;
 
+pub type Entity<R, S> = gfx_scene::Entity<R,
+	gfx_pipeline::Material<R>,
+	World<S>,
+	cgmath::Aabb3<S>,
+>;
+
 pub type Scene<R, S> = gfx_scene::Scene<R,
     gfx_pipeline::Material<R>,
     World<S>,

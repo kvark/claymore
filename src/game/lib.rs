@@ -1,4 +1,11 @@
+#![feature(custom_attribute, plugin)]
+#![plugin(gfx_macros)]
+
 extern crate rustc_serialize;
+#[macro_use]
+extern crate log;
+extern crate hex2d;
+extern crate cgmath;
 extern crate gfx;
 extern crate gfx_scene;
 extern crate gfx_pipeline;
@@ -9,12 +16,14 @@ use std::fs::File;
 use rustc_serialize::json;
 use gfx_pipeline::forward::Pipeline;
 
+mod grid;
 mod reflect;
 
 
 pub struct App<D: gfx::Device> {
     scene: scene::Scene<D::Resources, load::Scalar>,
     pipeline: Pipeline<D>,
+    grid: grid::Grid<D::Resources>,
 }
 
 impl<D: gfx::Device> App<D> {
@@ -22,6 +31,7 @@ impl<D: gfx::Device> App<D> {
         use std::env;
         use std::io::Read;
         let root = env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string());
+        let mut scene = load::create_scene();
         // load the config
         let config: reflect::Game = {
             let mut file = File::open(&format!("{}/config/game.json", root)).unwrap();
@@ -29,19 +39,33 @@ impl<D: gfx::Device> App<D> {
             file.read_to_string(&mut s).unwrap();
             json::decode(&s).unwrap()
         };
+        // create the grid
+        let grid_node = scene.world.add_node(
+            "Grid".to_string(),
+            scene::space::Parent::None,
+            cgmath::Transform::identity()
+        );
+        let grid = grid::Grid::new(factory, grid_node, config.level.grid.size);
         // load the scene
-        let (scene, texture) = {
+        let texture = {
             let mut context = load::Context::new(factory, root).unwrap();
-            let mut scene = context.load_scene(&config.level.scene).unwrap();
-            for (name, _ch) in config.level.characters.iter() {
+            context.extend_scene(&mut scene, &config.level.scene).unwrap();
+            for (name, ch) in config.level.characters.iter() {
+                let coord = hex2d::Coordinate::new(ch.cell.0, ch.cell.1);
                 match config.characters.get(name) {
                     Some(desc) => {
-                        context.extend_scene(&mut scene, &desc.scene).unwrap();
+                        use cgmath::Point;
+                        let nid = context.extend_scene(&mut scene, &desc.scene).unwrap();
+                        let node = scene.world.mut_node(nid);
+                        node.local.disp = grid.get_center(coord).to_vec();
+                        node.local.scale = ch.scale;
                     },
-                    None => (),
+                    None => {
+                        error!("Unable to find character: {}", name);
+                    },
                 }
             }
-            (scene, (context.texture_white.clone(), None))
+            (context.texture_white.clone(), None)
         };
         // create the pipeline
         let mut pipeline = Pipeline::new(device, factory, texture).unwrap();
@@ -50,6 +74,7 @@ impl<D: gfx::Device> App<D> {
         App {
             scene: scene,
             pipeline: pipeline,
+            grid: grid,
         }
     }
 

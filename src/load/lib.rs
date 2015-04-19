@@ -190,14 +190,10 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         }
     }
 
-    pub fn create_scene(&self) -> cs::Scene<R, Scalar> {
-        gfx_scene::Scene::new(cs::space::World::new())
-    }
-
     pub fn load_scene(&mut self, path_str: &str)
                       -> Result<cs::Scene<R, Scalar>, SceneError>
     {
-        let mut scene = self.create_scene();
+        let mut scene = create_scene();
         match self.load_scene_into(&mut scene, cs::space::Parent::None, path_str) {
             Ok(()) => Ok(scene),
             Err(e) => Err(e),
@@ -215,6 +211,10 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         self.load_scene_into(scene, cs::space::Parent::Domestic(nid), path_str)
             .map(|_| nid)
     }
+}
+
+pub fn create_scene<R: gfx::Resources>() -> cs::Scene<R, Scalar> {
+    gfx_scene::Scene::new(cs::space::World::new())
 }
 
 pub fn load_mesh<'a, R: gfx::Resources, F: gfx::Factory<R>>(path_str: &str, factory: &mut F)
