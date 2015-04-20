@@ -18,7 +18,7 @@ pub fn main() {
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
 
     println!("Loading the game...");
-    let mut app = game::App::new(&canvas.device, &mut canvas.factory);
+    let mut app = game::App::new(&mut canvas.factory);
 
     println!("Rendering...");
     'main: loop {
@@ -31,9 +31,8 @@ pub fn main() {
             }
         }
 
-        let buf = app.render(&canvas.output).unwrap();
+        app.render(&mut canvas.renderer, &canvas.output);
 
-        canvas.device.submit(buf);
         canvas.present();
     }
     println!("Done.");

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 pub type WorldVector = (f32, f32, f32);
 pub type CellPosition = (i8, i8);
+pub type Color = (f32, f32, f32, f32);
 
 #[derive(RustcDecodable)]
 pub struct Game {
@@ -27,6 +28,7 @@ pub struct Level {
 pub struct Grid {
     pub center: WorldVector,
     pub size: f32,
+    pub color: Color,
 }
 
 #[derive(RustcDecodable)]

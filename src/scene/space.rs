@@ -14,7 +14,7 @@ pub enum Parent<T> {
 #[derive(Debug)]
 pub struct Node<T> {
     pub name : String,
-    parent: Parent<T>,
+    pub parent: Parent<T>,
     pub local: T,
     pub world: T,
 }

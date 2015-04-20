@@ -20,14 +20,14 @@ mod grid;
 mod reflect;
 
 
-pub struct App<D: gfx::Device> {
-    scene: scene::Scene<D::Resources, load::Scalar>,
-    pipeline: Pipeline<D>,
-    grid: grid::Grid<D::Resources>,
+pub struct App<R: gfx::Resources> {
+    scene: scene::Scene<R, load::Scalar>,
+    pipeline: Pipeline<R>,
+    grid: grid::Grid<R>,
 }
 
-impl<D: gfx::Device> App<D> {
-    pub fn new<F: gfx::Factory<D::Resources>>(device: &D, factory: &mut F) -> App<D> {
+impl<R: gfx::Resources> App<R> {
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F) -> App<R> {
         use std::env;
         use std::io::Read;
         let root = env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string());
@@ -45,7 +45,8 @@ impl<D: gfx::Device> App<D> {
             scene::space::Parent::None,
             cgmath::Transform::identity()
         );
-        let grid = grid::Grid::new(factory, grid_node, config.level.grid.size);
+        let grid = grid::Grid::new(factory, grid_node,
+            config.level.grid.size, config.level.grid.color);
         // load the scene
         let texture = {
             let mut context = load::Context::new(factory, root).unwrap();
@@ -57,6 +58,7 @@ impl<D: gfx::Device> App<D> {
                         use cgmath::Point;
                         let nid = context.extend_scene(&mut scene, &desc.scene).unwrap();
                         let node = scene.world.mut_node(nid);
+                        node.parent = scene::space::Parent::Domestic(grid.node);
                         node.local.disp = grid.get_center(coord).to_vec();
                         node.local.scale = ch.scale;
                     },
@@ -68,7 +70,7 @@ impl<D: gfx::Device> App<D> {
             (context.texture_white.clone(), None)
         };
         // create the pipeline
-        let mut pipeline = Pipeline::new(device, factory, texture).unwrap();
+        let mut pipeline = Pipeline::new(factory, texture).unwrap();
         pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
         // done
         App {
@@ -78,8 +80,8 @@ impl<D: gfx::Device> App<D> {
         }
     }
 
-    pub fn render<O: gfx::Output<D::Resources>>(&mut self, output: &O)
-        -> Result<gfx::SubmitInfo<D>, gfx_pipeline::Error> {
+    pub fn render<C: gfx::CommandBuffer<R>, O: gfx::Output<R>>(
+                  &mut self, renderer: &mut gfx::Renderer<R, C>, output: &O) {
         use gfx_pipeline::Pipeline;
         self.scene.world.update();
         let mut camera = self.scene.cameras[0].clone();
@@ -87,6 +89,8 @@ impl<D: gfx::Device> App<D> {
             let (w, h) = output.get_size();
             w as f32 / h as f32
         };
-        self.pipeline.render(&self.scene, &camera, output)
+        self.pipeline.render(&self.scene, renderer, &camera, output).unwrap();
+        self.grid.update_params(&camera, &self.scene.world);
+        self.grid.draw(renderer, output);
     }
 }

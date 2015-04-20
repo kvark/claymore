@@ -14,18 +14,19 @@
 		"scene": "data/level",
 		"grid": {
 			"center": [0, 0, 0],
-			"size": 0.5
+			"size": 0.5,
+			"color": [0.0, 1.0, 0.0, 1.0]
 		},
 		"characters": {
 			"vika": {
 				"team": 1,
 				"cell": [-2, -2],
-				"scale": 1
+				"scale": 0.5
 			},
 			"valefor": {
 				"team": 2,
 				"cell": [2, 2],
-				"scale": 0.5
+				"scale": 0.3
 			}
 		}
 	}

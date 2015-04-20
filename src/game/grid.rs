@@ -7,6 +7,7 @@ use scene;
 #[shader_param]
 struct Param<R: gfx::Resources> {
     mvp: [[f32; 4]; 4],
+    color: [f32; 4],
     _dummy: PhantomData<R>,
 }
 
@@ -31,8 +32,10 @@ static VERTEX_SRC: &'static [u8] = b"
 static FRAGMENT_SRC: &'static [u8] = b"
     #version 120
 
+    uniform vec4 color;
+
     void main() {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = color;
     }
 ";
 
@@ -47,7 +50,8 @@ pub struct Grid<R: gfx::Resources> {
 
 impl<R: gfx::Resources> Grid<R> {
     pub fn new<F: gfx::Factory<R>>(factory: &mut F,
-               node: scene::NodeId<f32>, size: f32) -> Grid<R> {
+               node: scene::NodeId<f32>, size: f32, color: (f32, f32, f32, f32))
+               -> Grid<R> {
         use gfx::traits::FactoryExt;
         let spacing = hex2d::Spacing::FlatTop(size);
         let mut vertices = Vec::new();
@@ -63,9 +67,10 @@ impl<R: gfx::Resources> Grid<R> {
         let program = factory.link_program(VERTEX_SRC, FRAGMENT_SRC).unwrap();
         let mut batch = gfx::batch::OwnedBatch::new(mesh, program, Param {
             mvp: [[0.0; 4]; 4],
+            color: [color.0, color.1, color.2, color.3],
             _dummy: PhantomData,
         }).unwrap();
-        batch.state.depth(gfx::state::Comparison::LessEqual, false);
+        batch.state = batch.state.depth(gfx::state::Comparison::LessEqual, false);
         batch.slice.prim_type = gfx::PrimitiveType::Point;
         Grid {
             node: node,
@@ -81,6 +86,15 @@ impl<R: gfx::Resources> Grid<R> {
 
     pub fn get_cell(&self, position: cgmath::Point3<f32>) -> Coordinate {
         hex2d::Coordinate::new(0, 0)    //TODO
+    }
+
+    pub fn update_params(&mut self, camera: &scene::Camera<f32>, world: &scene::World<f32>) {
+        use cgmath::{Matrix, ToMatrix4, FixedArray, Transform};
+        use scene::base::World;
+        let mx_proj = camera.projection.to_matrix4();
+        let model_view = world.get_transform(&camera.node).invert().unwrap()
+                              .concat(&world.get_transform(&self.node));
+        self.batch.param.mvp = mx_proj.mul_m(&model_view.to_matrix4()).into_fixed();
     }
 
     pub fn draw<C: gfx::CommandBuffer<R>, O: gfx::Output<R>>(&self,
