@@ -84,8 +84,15 @@ impl<R: gfx::Resources> Grid<R> {
         cgmath::Point3::new(x, y, 0.0)
     }
 
-    pub fn get_cell(&self, position: cgmath::Point3<f32>) -> Coordinate {
-        hex2d::Coordinate::new(0, 0)    //TODO
+    pub fn get_cell(&self, position: &cgmath::Point3<f32>) -> Option<Coordinate> {
+        hex2d::Coordinate::from_round(position.x, position.y) //TODO?
+    }
+
+    pub fn cast_ray(&self, ray: &cgmath::Ray3<f32>) -> Option<Coordinate> {
+        use cgmath::{Point, Vector};
+        let t = -ray.origin.z / ray.direction.z;
+        let p = ray.origin.add_v(&ray.direction.mul_s(t));
+        self.get_cell(&p)
     }
 
     pub fn update_params(&mut self, camera: &scene::Camera<f32>, world: &scene::World<f32>) {

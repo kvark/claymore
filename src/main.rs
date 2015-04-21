@@ -22,12 +22,19 @@ pub fn main() {
 
     println!("Rendering...");
     'main: loop {
+        let (mut mouse_x, mut mouse_y) = (0, 0);
         // quit when Esc is pressed.
         for event in canvas.output.window.poll_events() {
+            use glutin::{ElementState, Event, MouseButton, VirtualKeyCode};
             match event {
-                glutin::Event::KeyboardInput(_, _, Some(glutin::VirtualKeyCode::Escape)) => break 'main,
-                glutin::Event::Closed => break 'main,
-                _ => {},
+                Event::Closed => break 'main,
+                Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => break 'main,
+                Event::MouseMoved((x, y)) => { mouse_x = x; mouse_y = y; },
+                Event::MouseInput(ElementState::Pressed, MouseButton::Left) => {
+                    let (sx, sy) = canvas.output.get_size();
+                    app.mouse_click(mouse_x as f32 / sx as f32, mouse_y as f32 / sy as f32);
+                },
+                _ => (),
             }
         }
 

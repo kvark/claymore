@@ -19,12 +19,12 @@
 		},
 		"characters": {
 			"vika": {
-				"team": 1,
+				"team": 0,
 				"cell": [-2, -2],
 				"scale": 0.5
 			},
 			"valefor": {
-				"team": 2,
+				"team": 1,
 				"cell": [2, 2],
 				"scale": 0.3
 			}
