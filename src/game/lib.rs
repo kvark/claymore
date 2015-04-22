@@ -21,7 +21,7 @@ mod reflect;
 
 
 struct Character {
-    name: String,
+    _name: String,
     team: u8,
     cell: field::Coordinate,
     node: scene::NodeId<load::Scalar>,
@@ -74,7 +74,7 @@ impl<R: gfx::Resources> App<R> {
                         node.local.disp = field.get_center(coord).to_vec();
                         node.local.scale = ch.scale;
                         characters.push(Character {
-                            name: name.clone(),
+                            _name: name.clone(),
                             team: ch.team,
                             cell: coord,
                             node: nid,
@@ -101,21 +101,9 @@ impl<R: gfx::Resources> App<R> {
         }
     }
 
-    pub fn mouse_click(&mut self, x: f32, y: f32) {
-        use std::collections::HashMap;
-        use cgmath::{Matrix, Point, ToMatrix4, Transform};
+    fn mouse_cast(&self, x: f32, y: f32) -> field::Coordinate {
+        use cgmath::{EuclideanVector, Matrix, Point, ToMatrix4, Transform};
         use scene::base::World;
-        let mut cell_map = HashMap::new();
-        for ch in self.characters.iter() {
-            cell_map.insert(ch.cell, ch.team);
-        }
-        let player = match self.characters.iter_mut().find(|c| c.team == 0) {
-            Some(p) => p,
-            None => {
-                println!("click: no playable character");
-                return
-            },
-        };
         let end_proj = cgmath::Point3::new(x*2.0 - 0.5, 0.5 - y*2.0, 0.0);
         let mx_proj = self.camera.projection.to_matrix4().invert().unwrap();
         let end_cam = cgmath::Point3::from_homogeneous(
@@ -127,7 +115,23 @@ impl<R: gfx::Resources> App<R> {
                             .invert().unwrap()
                             .concat(&self.scene.world.get_transform(&self.camera.node));
         let ray_grid = transform.transform_ray(&ray);
-        let cell = self.field.cast_ray(&ray_grid);
+        self.field.cast_ray(&ray_grid)
+    }
+
+    pub fn mouse_click(&mut self, x: f32, y: f32) {
+        use std::collections::HashMap;
+        let cell = self.mouse_cast(x, y);
+        let mut cell_map = HashMap::new();
+        for ch in self.characters.iter() {
+            cell_map.insert(ch.cell, ch.team);
+        }
+        let player = match self.characters.iter_mut().find(|c| c.team == 0) {
+            Some(p) => p,
+            None => {
+                println!("click: no playable character");
+                return
+            },
+        };
         match cell_map.get(&cell) {
             Some(team) if *team == player.team => {
                 println!("click: aid ally");
@@ -136,12 +140,27 @@ impl<R: gfx::Resources> App<R> {
                 println!("click: attack");
             },
             None => { //move
+                use cgmath::Point;
                 println!("click: move");
                 player.cell = cell;
                 let node = self.scene.world.mut_node(player.node);
                 node.local.disp = self.field.get_center(cell).to_vec();
             },
         }
+    }
+
+    pub fn rotate_camera(&mut self, degrees: f32) {
+        use cgmath::{ToRad, Transform};
+        let rotation = cgmath::Decomposed {
+            scale: 1.0,
+            rot: cgmath::Rotation3::from_axis_angle(
+                &cgmath::vec3(0.0, 0.0, 1.0),
+                cgmath::deg(degrees).to_rad()
+            ),
+            disp: cgmath::zero(),
+        };
+        let transform = &mut self.scene.world.mut_node(self.camera.node).local;
+        *transform = rotation.concat(transform);
     }
 
     pub fn render<C: gfx::CommandBuffer<R>, O: gfx::Output<R>>(

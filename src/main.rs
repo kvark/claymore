@@ -29,6 +29,10 @@ pub fn main() {
             match event {
                 Event::Closed => break 'main,
                 Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => break 'main,
+                Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::W)) =>
+                    app.rotate_camera(-90.0),
+                Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::E)) =>
+                    app.rotate_camera(90.0),
                 Event::MouseMoved((x, y)) => { mouse_x = x; mouse_y = y; },
                 Event::MouseInput(ElementState::Pressed, MouseButton::Left) => {
                     let (sx, sy) = canvas.output.get_size();

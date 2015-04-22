@@ -100,7 +100,6 @@ impl<R: gfx::Resources> Field<R> {
         use cgmath::{Point, Vector};
         let t = -ray.origin.z / ray.direction.z;
         let p = ray.origin.add_v(&ray.direction.mul_s(t));
-        println!("Cast Ray(origin: {:?}, dir: {:?}), t = {}, p = {:?}", ray.origin, ray.direction, t, p);
         self.get_cell(&p)
     }
 
