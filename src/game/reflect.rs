@@ -28,6 +28,7 @@ pub struct Level {
 pub struct Grid {
     pub center: WorldVector,
     pub size: f32,
+    pub area: f32,
     pub color: Color,
 }
 

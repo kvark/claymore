@@ -136,7 +136,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 settings.generate_mipmap = true;
                 let tex_maybe = gfx_texture::Texture::from_path(
                     self.factory, path, &settings
-                    ).map(|t| t.handle);
+                    ).map(|t| t.handle());
                 v.insert(tex_maybe).clone()
             },
         }

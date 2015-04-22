@@ -1,7 +1,9 @@
 use std::marker::PhantomData;
 use cgmath;
+use cgmath::FixedArray;
 use gfx;
-use hex2d;
+use grid;
+use grid::Grid;
 use scene;
 
 #[shader_param]
@@ -15,6 +17,14 @@ struct Param<R: gfx::Resources> {
 #[derive(Clone, Copy)]
 struct Vertex {
     position: [f32; 2],
+}
+
+impl Vertex {
+    pub fn new(x: f32, y: f32) -> Vertex {
+        Vertex {
+            position: [x, y],
+        }
+    }
 }
 
 static VERTEX_SRC: &'static [u8] = b"
@@ -40,29 +50,27 @@ static FRAGMENT_SRC: &'static [u8] = b"
 ";
 
 
-pub type Coordinate = hex2d::Coordinate<i8>;
+pub type Coordinate = grid::quad::Coordinate;
 
-pub struct Grid<R: gfx::Resources> {
+pub struct Field<R: gfx::Resources> {
     pub node: scene::NodeId<f32>,
-    spacing: hex2d::Spacing,
+    pub grid: grid::quad::Grid,
     batch: gfx::batch::OwnedBatch<Param<R>>,
 }
 
-impl<R: gfx::Resources> Grid<R> {
+impl<R: gfx::Resources> Field<R> {
     pub fn new<F: gfx::Factory<R>>(factory: &mut F,
-               node: scene::NodeId<f32>, size: f32, color: (f32, f32, f32, f32))
-               -> Grid<R> {
+               node: scene::NodeId<f32>, size: f32, area: f32,
+               color: (f32, f32, f32, f32))
+               -> Field<R> {
         use gfx::traits::FactoryExt;
-        let spacing = hex2d::Spacing::FlatTop(size);
-        let mut vertices = Vec::new();
-        for i in -10 .. 10 {
-            for j in -10 .. 10 {
-                let (x, y) = hex2d::Coordinate::new(i, j).to_pixel_float(spacing);
-                vertices.push(Vertex {
-                    position: [x, y],
-                });
-            }
-        }
+        let grid = grid::quad::Grid::new(size);
+        let area = [[-area, -area, 0.0], [area, area, 0.0]];
+        let vertices = grid.fold_edges_in_area(&area, Vec::new(), |mut u, a, b, _, _| {
+            u.push(Vertex::new(a[0], a[1]));
+            u.push(Vertex::new(b[0], b[1]));
+            u
+        });
         let mesh = factory.create_mesh(&vertices);
         let program = factory.link_program(VERTEX_SRC, FRAGMENT_SRC).unwrap();
         let mut batch = gfx::batch::OwnedBatch::new(mesh, program, Param {
@@ -71,32 +79,33 @@ impl<R: gfx::Resources> Grid<R> {
             _dummy: PhantomData,
         }).unwrap();
         batch.state = batch.state.depth(gfx::state::Comparison::LessEqual, false);
-        batch.slice.prim_type = gfx::PrimitiveType::Point;
-        Grid {
+        batch.slice.prim_type = gfx::PrimitiveType::Line;
+        Field {
             node: node,
-            spacing: spacing,
+            grid: grid,
             batch: batch,
         }
     }
 
     pub fn get_center(&self, coord: Coordinate) -> cgmath::Point3<f32> {
-        let (x, y) = coord.to_pixel_float(self.spacing);
-        cgmath::Point3::new(x, y, 0.0)
+        let fixed = self.grid.get_cell_center(coord);
+        cgmath::Point3::new(fixed[0], fixed[1], fixed[2])
     }
 
-    pub fn get_cell(&self, position: &cgmath::Point3<f32>) -> Option<Coordinate> {
-        hex2d::Coordinate::from_round(position.x, position.y) //TODO?
+    pub fn get_cell(&self, position: &cgmath::Point3<f32>) -> Coordinate {
+        self.grid.get_coordinate(position.as_fixed())
     }
 
-    pub fn cast_ray(&self, ray: &cgmath::Ray3<f32>) -> Option<Coordinate> {
+    pub fn cast_ray(&self, ray: &cgmath::Ray3<f32>) -> Coordinate {
         use cgmath::{Point, Vector};
         let t = -ray.origin.z / ray.direction.z;
         let p = ray.origin.add_v(&ray.direction.mul_s(t));
+        println!("Cast Ray(origin: {:?}, dir: {:?}), t = {}, p = {:?}", ray.origin, ray.direction, t, p);
         self.get_cell(&p)
     }
 
     pub fn update_params(&mut self, camera: &scene::Camera<f32>, world: &scene::World<f32>) {
-        use cgmath::{Matrix, ToMatrix4, FixedArray, Transform};
+        use cgmath::{Matrix, ToMatrix4, Transform};
         use scene::base::World;
         let mx_proj = camera.projection.to_matrix4();
         let model_view = world.get_transform(&camera.node).invert().unwrap()

@@ -19,8 +19,8 @@ path = "../scene"
 [dependencies.claymore-load]
 path = "../load"
 
-[dependencies.hex2d]
-git = "https://github.com/dpc/hex2d-rs"
+[dependencies.grid]
+git = "https://github.com/kvark/grid-rs"
 
 [dependencies.cgmath]
 git = "https://github.com/bjz/cgmath-rs"

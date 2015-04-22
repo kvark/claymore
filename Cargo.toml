@@ -24,8 +24,8 @@ path = "src/load/"
 [dependencies.claymore-game]
 path = "src/game/"
 
-[dependencies.fibe]
-git = "https://github.com/kvark/fibe-rs"
+#[dependencies.fibe]
+#git = "https://github.com/kvark/fibe-rs"
 
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin"

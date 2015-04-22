@@ -21,8 +21,8 @@ pub fn main() {
     let mut app = game::App::new(&mut canvas.factory);
 
     println!("Rendering...");
+    let (mut mouse_x, mut mouse_y) = (0, 0);
     'main: loop {
-        let (mut mouse_x, mut mouse_y) = (0, 0);
         // quit when Esc is pressed.
         for event in canvas.output.window.poll_events() {
             use glutin::{ElementState, Event, MouseButton, VirtualKeyCode};
@@ -39,7 +39,6 @@ pub fn main() {
         }
 
         app.render(&mut canvas.renderer, &canvas.output);
-
         canvas.present();
     }
     println!("Done.");
