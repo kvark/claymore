@@ -60,8 +60,8 @@ impl<R: gfx::Resources> App<R> {
             config.level.grid.color);
         // load the scene
         let mut characters = Vec::new();
-        let texture = {
-            let mut context = load::Context::new(factory, root).unwrap();
+        {
+            let mut context = load::Context::new(factory, root);
             context.extend_scene(&mut scene, &config.level.scene).unwrap();
             for (name, ch) in config.level.characters.iter() {
                 let coord = [ch.cell.0 as i32, ch.cell.1 as i32];
@@ -85,10 +85,9 @@ impl<R: gfx::Resources> App<R> {
                     },
                 }
             }
-            (context.texture_white.clone(), None)
         };
         // create the pipeline
-        let mut pipeline = Pipeline::new(factory, texture).unwrap();
+        let mut pipeline = Pipeline::new(factory).unwrap();
         pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
         // done
         let camera = scene.cameras[0].clone();

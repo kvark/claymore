@@ -113,21 +113,19 @@ fn main() {
         &mut canvas, 64, None, None).ok().unwrap();
 
     let mut scene = claymore_load::create_scene();
-    let texture = {
+    {
         let mut context = claymore_load::Context::new(&mut canvas.factory,
-            env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
-            ).unwrap();
+            env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string()));
         context.forgive = true;
         for path in env::args().skip(1) {
             println!("Loading scene: {}", path);
             context.extend_scene(&mut scene, &path).unwrap();
         }
-        (context.texture_white.clone(), None)
-    };
+    }
 
     println!("Initializing the graphics...");
-    let mut pipeline = gfx_pipeline::forward::Pipeline::new(
-        &mut canvas.factory, texture).unwrap();
+    let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut canvas.factory)
+                                                       .unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
     let mut camera = match scene.cameras.first() {
@@ -169,7 +167,7 @@ fn main() {
         }
 
         scene.world.update();
-        let len = 1f32;
+        let len = 0.1f32;
 
         for node in scene.world.iter_nodes() {
             let r = node.world.transform_as_point(&vec3(0.0, 0.0, 0.0)).into_fixed();

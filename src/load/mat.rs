@@ -16,7 +16,7 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
     let mut out = Material {
         visible: true,
         color: [1.0, 1.0, 1.0, 1.0],
-        texture: (context.texture_white.clone(), Some(context.sampler_point.clone())),
+        texture: None,
         blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},
     };
     if let Some(ref rt) = mat.textures.first() {
@@ -53,8 +53,9 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
                 sinfo.wrap_mode.1 = wy;
                 sinfo.wrap_mode.2 = wz;
                 let sampler = context.factory.create_sampler(sinfo);
-                out.texture = (t, Some(sampler));
+                out.texture = Some((t, Some(sampler)));
             },
+            Err(_) if context.forgive => (), //already errored in request_texture()
             Err(e) => return Err(Error::Texture(rt.image.path.clone(), e)),
         }
     };

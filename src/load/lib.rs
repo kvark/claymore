@@ -53,41 +53,20 @@ pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     pub factory: &'a mut F,
     pub base_path: String,
     prefix: String,
-    pub texture_white: gfx::TextureHandle<R>,
-    pub sampler_point: gfx::SamplerHandle<R>,
     pub flip_textures: bool,
     pub forgive: bool,
 }
 
-#[derive(Clone, Debug)]
-pub enum ContextError {
-    Texture(gfx::tex::TextureError),
-    Program(gfx::ProgramError),
-}
-
 impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
-    pub fn new(factory: &'a mut F, path: String)
-               -> Result<Context<'a, R, F>, ContextError>
-    {
-        use gfx::traits::FactoryExt;
-        let texture = match factory.create_texture_rgba8_static(1, 1, &[0xFFFFFFFF]) {
-            Ok(t) => t,
-            Err(e) => return Err(ContextError::Texture(e)),
-        };
-        let sampler = factory.create_sampler(gfx::tex::SamplerInfo::new(
-            gfx::tex::FilterMethod::Scale,
-            gfx::tex::WrapMode::Tile
-        ));
-        Ok(Context {
+    pub fn new(factory: &'a mut F, path: String) -> Context<'a, R, F> {
+        Context {
             cache: Cache::new(),
             factory: factory,
             base_path: path,
             prefix: String::new(),
-            texture_white: texture,
-            sampler_point: sampler,
             flip_textures: true,    // following Blender
             forgive: false,         // panic out
-        })
+        }
     }
 
     fn read_mesh_collection(&mut self, path_str: &str) -> Result<(), mesh::Error> {
@@ -136,15 +115,16 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 settings.flip_vertical = true;
                 settings.convert_gamma = srgb;
                 settings.generate_mipmap = true;
-                let tex_maybe = gfx_texture::Texture::from_path(
+                let tex_result = gfx_texture::Texture::from_path(
                     self.factory, path, &settings);
-                let tex = match (self.forgive, tex_maybe) {
-                    (_, Ok(t)) => Ok(t.handle()),
-                    (true, Err(_)) => {
-                        error!("Texture not found!");
-                        Ok(self.texture_white.clone())
+                let tex = match tex_result {
+                    Ok(t) => Ok(t.handle()),
+                    Err(e) => {
+                        if self.forgive {
+                            error!("Texture failed to load: {:?}", e);
+                        }
+                        Err(e)
                     },
-                    (false, Err(e)) => Err(e),
                 };
                 v.insert(tex).clone()
             },
