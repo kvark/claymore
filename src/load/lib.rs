@@ -56,6 +56,7 @@ pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     pub texture_white: gfx::TextureHandle<R>,
     pub sampler_point: gfx::SamplerHandle<R>,
     pub flip_textures: bool,
+    pub forgive: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -85,6 +86,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             texture_white: texture,
             sampler_point: sampler,
             flip_textures: true,    // following Blender
+            forgive: false,         // panic out
         })
     }
 
@@ -135,9 +137,16 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 settings.convert_gamma = srgb;
                 settings.generate_mipmap = true;
                 let tex_maybe = gfx_texture::Texture::from_path(
-                    self.factory, path, &settings
-                    ).map(|t| t.handle());
-                v.insert(tex_maybe).clone()
+                    self.factory, path, &settings);
+                let tex = match (self.forgive, tex_maybe) {
+                    (_, Ok(t)) => Ok(t.handle()),
+                    (true, Err(_)) => {
+                        error!("Texture not found!");
+                        Ok(self.texture_white.clone())
+                    },
+                    (false, Err(e)) => Err(e),
+                };
+                v.insert(tex).clone()
             },
         }
     }

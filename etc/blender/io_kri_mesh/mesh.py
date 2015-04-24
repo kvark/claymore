@@ -425,7 +425,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 			for v in ar_vert:
 				assert i<len(v.tex)
 				tc = v.tex[i]
-				vat.data.append( tc.to_2d() )
+				vat.data.append(tc.to_2d())
 
 	if Settings.putColor:
 		all = mesh.vertex_colors
@@ -436,7 +436,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 			for v in ar_vert:
 				assert i<len(v.color)
 				tc = v.color[i];
-				vat.data.append([ tc.r, tc.g, tc.b, tc.a ])
+				vat.data.append(tc)
 
 	if not 'putSticky':
 		all = mesh.sticky
@@ -454,7 +454,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		log.log(1,'i', 'Index format: %s' % (stype))
 		km.index = vat = Attribute('', stype, 0)
 		for face in ar_face:
-			vat.data.append( face.vi )
+			vat.data.append(face.vi)
 
 	# 8: bone weights
 	if armature:

@@ -19,16 +19,16 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
         texture: (context.texture_white.clone(), Some(context.sampler_point.clone())),
         blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},
     };
-    match mat.textures.first() {
-        Some(ref rt) => match context.request_texture(&rt.image.path,
-            match rt.image.space.as_ref() {
-                "Linear" => false,
-                "sRGB" => true,
-                other => {
-                    warn!("Unknown color space: {}", other);
-                    false
-                }
-            }) {
+    if let Some(ref rt) = mat.textures.first() {
+        let space = match rt.image.space.as_ref() {
+            "Linear" => false,
+            "sRGB" => true,
+            other => {
+                warn!("Unknown color space: {}", other);
+                false
+            }
+        };
+        match context.request_texture(&rt.image.path, space) {
             Ok(t) => {
                 fn unwrap(mode: i8) -> Result<gfx::tex::WrapMode, Error> {
                     match mode {
@@ -56,14 +56,10 @@ pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
                 out.texture = (t, Some(sampler));
             },
             Err(e) => return Err(Error::Texture(rt.image.path.clone(), e)),
-        },
-        None => (),
+        }
     };
-    match mat.data.get("DiffuseColor") {
-        Some(&(_, ref vec)) => {
-            out.color = [vec[0], vec[1], vec[2], 1.0];
-        },
-        None => (),
+    if let Some(&(_, ref vec)) = mat.data.get("DiffuseColor") {
+        out.color = [vec[0], vec[1], vec[2], 1.0];
     }
     Ok(out)
 }

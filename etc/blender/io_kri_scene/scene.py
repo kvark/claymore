@@ -56,7 +56,7 @@ def cook_mat(mat,log):
 	}
 
 
-def cook_space(matrix):
+def cook_space(matrix, log):
 	pos, rot, sca = matrix.decompose()
 	scale = (sca.x + sca.y + sca.z)/3.0
 	if sca.x*sca.x+sca.y*sca.y+sca.z*sca.z > 0.01 + sca.x*sca.y+sca.y*sca.z+sca.z*sca.x:
@@ -70,7 +70,7 @@ def cook_space(matrix):
 def cook_node(ob, log):
 	return {
 		'name'		: ob.name,
-		'space'		: cook_space(ob.matrix_local),
+		'space'		: cook_space(ob.matrix_local, log),
 		'children'	: [],
 		'actions'	: [],
 	}
@@ -84,15 +84,17 @@ def cook_camera(cam, log):
 	}
 
 def cook_lamp(lamp, log):
-	attenu = [lamp.linear_attenuation, lamp.quadratic_attenuation]
+	attenu = [0.0, 0.0]
 	sphere = False
 	params = []
 	kind = lamp.type
-	if lamp.type in ('SPOT', 'POINT'):
+	if kind not in ('SUN', 'HEMI'):
+		attenu = [lamp.linear_attenuation, lamp.quadratic_attenuation]
+	if kind in ('SPOT', 'POINT'):
 		sphere = lamp.use_sphere
-	if lamp.type == 'SPOT':
+	if kind == 'SPOT':
 		params = [lamp.spot_size, lamp.spot_blend, 0.1]
-	elif lamp.type == 'AREA':
+	elif kind == 'AREA':
 		params = [lamp.size, lamp.size_y, 0.1]
 	return {
 		'name'			: lamp.name,
@@ -106,7 +108,7 @@ def cook_lamp(lamp, log):
 		'actions'		: [],
 	}
 
-def cook_armature(arm,log):
+def cook_armature(arm, log):
 	root = { 'children': [] }
 	bones = { '':root }
 	for b in arm.bones:
@@ -117,7 +119,7 @@ def cook_armature(arm,log):
 			mx = b.parent.matrix_local.copy().inverted() * mx
 		ob = {
 			'name'		: b.name,
-			'space'		: cook_space(mx),
+			'space'		: cook_space(mx, log),
 			'children'	: [],
 		}
 		par['children'].append(ob)
@@ -270,7 +272,9 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 		# parse node
 		if len(ob.modifiers):
 			log.log(1, 'w', 'Unapplied modifiers detected on object %s' % (ob.name))
-		current = {}
+		current = {
+			'actions'	: [],
+		}
 		if ob.type == 'MESH':
 			if out_mesh != None:
 				(_, face_num) = save_mesh(out_mesh, ob, log)

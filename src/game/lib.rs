@@ -30,7 +30,7 @@ struct Character {
 pub struct App<R: gfx::Resources> {
     scene: scene::Scene<R, load::Scalar>,
     camera: scene::Camera<load::Scalar>,
-    pipeline: Pipeline<R>,
+    pipeline: Pipeline<R, scene::Entity<R, load::Scalar>>,
     field: field::Field<R>,
     characters: Vec<Character>,
 }

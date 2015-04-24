@@ -112,21 +112,22 @@ fn main() {
     let mut debug_renderer = gfx_debug_draw::DebugRenderer::from_canvas(
         &mut canvas, 64, None, None).ok().unwrap();
 
-    let (mut scene, texture) = {
+    let mut scene = claymore_load::create_scene();
+    let texture = {
         let mut context = claymore_load::Context::new(&mut canvas.factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string())
             ).unwrap();
-        let mut scene = context.create_scene();
+        context.forgive = true;
         for path in env::args().skip(1) {
             println!("Loading scene: {}", path);
             context.extend_scene(&mut scene, &path).unwrap();
         }
-        (scene, (context.texture_black.clone(), None))
+        (context.texture_white.clone(), None)
     };
 
     println!("Initializing the graphics...");
     let mut pipeline = gfx_pipeline::forward::Pipeline::new(
-        &canvas.device, &mut canvas.factory, texture).unwrap();
+        &mut canvas.factory, texture).unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
     let mut camera = match scene.cameras.first() {
@@ -181,12 +182,10 @@ fn main() {
         }
 
         camera.projection.aspect = canvas.get_aspect_ratio();
-        let buf = pipeline.render(&scene, &camera, &canvas.output).unwrap();
-        canvas.device.submit(buf);
+        pipeline.render(&scene, &mut canvas.renderer, &camera, &canvas.output).unwrap();
 
         // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
-        //debug_renderer.render(&mut graphics, &frame,
-        //    camera.get_view_projection(&scene.world));
+        //debug_renderer.render_canvas(&mut canvas, camera.get_view_projection(&scene.world));
         if true {
             use cgmath::FixedArray;
             use claymore_scene::base::World;
