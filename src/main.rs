@@ -31,7 +31,7 @@ pub fn main() {
                 Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Escape)) => break 'main,
                 Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::W)) =>
                     app.rotate_camera(-90.0),
-                Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::E)) =>
+                Event::KeyboardInput(ElementState::Pressed, _, Some(VirtualKeyCode::Q)) =>
                     app.rotate_camera(90.0),
                 Event::MouseMoved((x, y)) => { mouse_x = x; mouse_y = y; },
                 Event::MouseInput(ElementState::Pressed, MouseButton::Left) => {
