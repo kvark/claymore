@@ -180,7 +180,7 @@ fn main() {
         }
 
         camera.projection.aspect = canvas.get_aspect_ratio();
-        pipeline.render(&scene, &mut canvas.renderer, &camera, &canvas.output).unwrap();
+        pipeline.render(&scene, &camera, &mut canvas).unwrap();
 
         // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
         //debug_renderer.render_canvas(&mut canvas, camera.get_view_projection(&scene.world));

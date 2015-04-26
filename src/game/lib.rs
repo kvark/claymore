@@ -162,16 +162,12 @@ impl<R: gfx::Resources> App<R> {
         *transform = rotation.concat(transform);
     }
 
-    pub fn render<C: gfx::CommandBuffer<R>, O: gfx::Output<R>>(
-                  &mut self, renderer: &mut gfx::Renderer<R, C>, output: &O) {
+    pub fn render<S: gfx::Stream<R>>(&mut self, stream: &mut S) {
         use gfx_pipeline::Pipeline;
         self.scene.world.update();
-        self.camera.projection.aspect = {
-            let (w, h) = output.get_size();
-            w as f32 / h as f32
-        };
-        self.pipeline.render(&self.scene, renderer, &self.camera, output).unwrap();
+        self.camera.projection.aspect = stream.get_aspect_ratio();
+        self.pipeline.render(&self.scene, &self.camera, stream).unwrap();
         self.field.update_params(&self.camera, &self.scene.world);
-        self.field.draw(renderer, output);
+        self.field.draw(stream);
     }
 }

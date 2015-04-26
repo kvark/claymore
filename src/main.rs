@@ -42,7 +42,7 @@ pub fn main() {
             }
         }
 
-        app.render(&mut canvas.renderer, &canvas.output);
+        app.render(&mut canvas);
         canvas.present();
     }
     println!("Done.");

@@ -112,8 +112,7 @@ impl<R: gfx::Resources> Field<R> {
         self.batch.param.mvp = mx_proj.mul_m(&model_view.to_matrix4()).into_fixed();
     }
 
-    pub fn draw<C: gfx::CommandBuffer<R>, O: gfx::Output<R>>(&self,
-                renderer: &mut gfx::Renderer<R, C>, output: &O) {
-        renderer.draw(&self.batch, output).unwrap();
+    pub fn draw<S: gfx::Stream<R>>(&self, stream: &mut S) {
+        stream.draw(&self.batch).unwrap();
     }
 }
