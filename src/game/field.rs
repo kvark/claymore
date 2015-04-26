@@ -27,6 +27,7 @@ impl Vertex {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 static VERTEX_SRC: &'static [u8] = b"
     #version 120
 
@@ -39,6 +40,20 @@ static VERTEX_SRC: &'static [u8] = b"
     }
 ";
 
+#[cfg(target_os = "macos")]
+static VERTEX_SRC: &'static [u8] = b"
+    #version 150
+
+    uniform mat4 mvp;
+    in vec2 position;
+
+    void main() {
+        gl_Position = mvp * vec4(position, 0.0, 1.0);
+        gl_PointSize = 2.0;
+    }
+";
+
+#[cfg(not(target_os = "macos"))]
 static FRAGMENT_SRC: &'static [u8] = b"
     #version 120
 
@@ -46,6 +61,18 @@ static FRAGMENT_SRC: &'static [u8] = b"
 
     void main() {
         gl_FragColor = color;
+    }
+";
+
+#[cfg(target_os = "macos")]
+static FRAGMENT_SRC: &'static [u8] = b"
+    #version 150
+
+    uniform vec4 color;
+    out vec4 f_color;
+
+    void main() {
+        f_color = color;
     }
 ";
 
