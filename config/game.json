@@ -3,10 +3,12 @@
 	"characters": {
 		"vika": {
 			"scene": "data/vika",
+			"direction": "North",
 			"health": 30
 		},
 		"valefor": {
 			"scene": "data/valefor",
+			"direction": "West",
 			"health": 100
 		}
 	},
@@ -16,17 +18,17 @@
 			"center": [0, 0, 0],
 			"size": 0.5,
 			"area": 7.0,
-			"color": [0.0, 1.0, 0.0, 1.0]
+			"color": [0.0, 0.0, 0.2, 1.0]
 		},
 		"characters": {
 			"vika": {
 				"team": 0,
-				"cell": [2, -4],
+				"cell": [2, -4, "East"],
 				"scale": 0.5
 			},
 			"valefor": {
 				"team": 1,
-				"cell": [1, 3],
+				"cell": [1, 3, "West"],
 				"scale": 0.3
 			}
 		}

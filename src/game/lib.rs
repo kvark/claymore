@@ -20,6 +20,17 @@ mod field;
 mod reflect;
 
 
+fn convert_dir(d: reflect::Direction) -> field::Direction {
+    use reflect::Direction as A;
+    use field::Direction as B;
+    match d {
+        A::North => B::North,
+        A::East => B::East,
+        A::South => B::South,
+        A::West => B::West,
+    }
+}
+
 struct Character {
     _name: String,
     team: u8,
@@ -65,14 +76,23 @@ impl<R: gfx::Resources> App<R> {
             context.extend_scene(&mut scene, &config.level.scene).unwrap();
             for (name, ch) in config.level.characters.iter() {
                 let coord = [ch.cell.0 as i32, ch.cell.1 as i32];
+                let cur_dir = convert_dir(ch.cell.2);
                 match config.characters.get(name) {
                     Some(desc) => {
-                        use cgmath::Point;
+                        use grid::Grid2;
+                        use cgmath::{Point, ToRad};
                         let nid = context.extend_scene(&mut scene, &desc.scene).unwrap();
                         let node = scene.world.mut_node(nid);
+                        let angle = field.grid.get_angle(convert_dir(desc.direction), cur_dir);
                         node.parent = scene::space::Parent::Domestic(field.node);
-                        node.local.disp = field.get_center(coord).to_vec();
-                        node.local.scale = ch.scale;
+                        node.local = cgmath::Decomposed {
+                            rot: cgmath::Rotation3::from_axis_angle(
+                                &cgmath::Vector3::new(0.0, 0.0, -1.0),
+                                cgmath::deg(angle * 180.0).to_rad()
+                            ),
+                            scale: ch.scale,
+                            disp: field.get_center(coord).to_vec(),
+                        };
                         characters.push(Character {
                             _name: name.clone(),
                             team: ch.team,
@@ -103,7 +123,7 @@ impl<R: gfx::Resources> App<R> {
     fn mouse_cast(&self, x: f32, y: f32) -> field::Coordinate {
         use cgmath::{EuclideanVector, Matrix, Point, ToMatrix4, Transform};
         use scene::base::World;
-        let end_proj = cgmath::Point3::new(x*2.0 - 0.5, 0.5 - y*2.0, 0.0);
+        let end_proj = cgmath::Point3::new(x*2.0 - 1.0, 1.0 - y*2.0, 0.0);
         let mx_proj = self.camera.projection.to_matrix4().invert().unwrap();
         let end_cam = cgmath::Point3::from_homogeneous(
             &mx_proj.mul_v(&end_proj.to_homogeneous())
@@ -120,6 +140,7 @@ impl<R: gfx::Resources> App<R> {
     pub fn mouse_click(&mut self, x: f32, y: f32) {
         use std::collections::HashMap;
         let cell = self.mouse_cast(x, y);
+        info!("[click] on {:?}", cell);
         let mut cell_map = HashMap::new();
         for ch in self.characters.iter() {
             cell_map.insert(ch.cell, ch.team);
@@ -127,20 +148,20 @@ impl<R: gfx::Resources> App<R> {
         let player = match self.characters.iter_mut().find(|c| c.team == 0) {
             Some(p) => p,
             None => {
-                println!("click: no playable character");
+                info!("[click] no playable character");
                 return
             },
         };
         match cell_map.get(&cell) {
             Some(team) if *team == player.team => {
-                println!("click: aid ally");
+                info!("[click] aid ally");
             },
             Some(_team) => {
-                println!("click: attack");
+                info!("[click] attack");
             },
             None => { //move
                 use cgmath::Point;
-                println!("click: move");
+                info!("[click] move");
                 player.cell = cell;
                 let node = self.scene.world.mut_node(player.node);
                 node.local.disp = self.field.get_center(cell).to_vec();

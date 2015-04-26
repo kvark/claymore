@@ -50,7 +50,7 @@ static FRAGMENT_SRC: &'static [u8] = b"
 ";
 
 
-pub type Coordinate = grid::quad::Coordinate;
+pub use grid::quad::{Coordinate, Direction};
 
 pub struct Field<R: gfx::Resources> {
     pub node: scene::NodeId<f32>,

@@ -1,7 +1,15 @@
 use std::collections::HashMap;
 
+#[derive(Clone, Copy, Debug, RustcDecodable)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
 pub type WorldVector = (f32, f32, f32);
-pub type CellPosition = (i8, i8);
+pub type CellInfo = (i8, i8, Direction);
 pub type Color = (f32, f32, f32, f32);
 
 #[derive(RustcDecodable)]
@@ -14,6 +22,7 @@ pub struct Game {
 #[derive(RustcDecodable)]
 pub struct GameChar {
     pub scene: String,
+    pub direction: Direction,
     pub health: u32,
 }
 
@@ -35,6 +44,6 @@ pub struct Grid {
 #[derive(RustcDecodable)]
 pub struct LevelChar {
     pub team: u8,
-    pub cell: CellPosition,
+    pub cell: CellInfo,
     pub scale: f32,
 }
