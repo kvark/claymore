@@ -29,10 +29,10 @@ impl Vertex {
 
 #[cfg(not(target_os = "macos"))]
 static VERTEX_SRC: &'static [u8] = b"
-    #version 120
+    #version 150 core
 
     uniform mat4 mvp;
-    attribute vec2 position;
+    in vec2 position;
 
     void main() {
         gl_Position = mvp * vec4(position, 0.0, 1.0);
@@ -55,12 +55,13 @@ static VERTEX_SRC: &'static [u8] = b"
 
 #[cfg(not(target_os = "macos"))]
 static FRAGMENT_SRC: &'static [u8] = b"
-    #version 120
+    #version 150 core
 
     uniform vec4 color;
+    out vec4 o_Color;
 
     void main() {
-        gl_FragColor = color;
+        o_Color = color;
     }
 ";
 
