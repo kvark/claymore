@@ -41,7 +41,7 @@ struct Character {
 pub struct App<R: gfx::Resources> {
     scene: scene::Scene<R, load::Scalar>,
     camera: scene::Camera<load::Scalar>,
-    pipeline: Pipeline<R, scene::Entity<R, load::Scalar>>,
+    pipeline: Pipeline<R>,
     field: field::Field<R>,
     characters: Vec<Character>,
 }
@@ -81,6 +81,7 @@ impl<R: gfx::Resources> App<R> {
                     Some(desc) => {
                         use grid::Grid2;
                         use cgmath::{Point, ToRad};
+                        context.alpha_test = Some(desc.alpha_test);
                         let nid = context.extend_scene(&mut scene, &desc.scene).unwrap();
                         let node = scene.world.mut_node(nid);
                         let angle = field.grid.get_angle(convert_dir(desc.direction), cur_dir);

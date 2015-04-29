@@ -116,6 +116,7 @@ fn main() {
     {
         let mut context = claymore_load::Context::new(&mut canvas.factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string()));
+        context.alpha_test = Some(20);
         context.forgive = true;
         for path in env::args().skip(1) {
             println!("Loading scene: {}", path);

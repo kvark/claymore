@@ -53,6 +53,7 @@ pub struct Context<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>> {
     pub factory: &'a mut F,
     pub base_path: String,
     prefix: String,
+    pub alpha_test: Option<u8>,
     pub flip_textures: bool,
     pub forgive: bool,
 }
@@ -64,6 +65,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             factory: factory,
             base_path: path,
             prefix: String::new(),
+            alpha_test: None,
             flip_textures: true,    // following Blender
             forgive: false,         // panic out
         }

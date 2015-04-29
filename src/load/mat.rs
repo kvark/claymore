@@ -1,5 +1,5 @@
 use gfx;
-use claymore_scene::Material;
+use claymore_scene::{Material, Transparency};
 use super::reflect;
 
 #[derive(Debug)]
@@ -14,10 +14,13 @@ pub enum Error {
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(mat: &reflect::Material,
             context: &mut super::Context<R, F>) -> Result<Material<R>, Error> {
     let mut out = Material {
-        visible: true,
         color: [1.0, 1.0, 1.0, 1.0],
         texture: None,
-        blend: if mat.transparent {Some(gfx::BlendPreset::Alpha)} else {None},
+        transparency: match (mat.transparent, context.alpha_test) {
+            (true, Some(v)) => Transparency::Cutout(v),
+            (true, None)    => Transparency::Blend(gfx::BlendPreset::Alpha),
+            (false, _)      => Transparency::Opaque,
+        },
     };
     if let Some(ref rt) = mat.textures.first() {
         let space = match rt.image.space.as_ref() {

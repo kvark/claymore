@@ -11,7 +11,7 @@ extern crate gfx_scene;
 extern crate gfx_pipeline;
 
 pub mod space;
-pub use gfx_pipeline::{Material, ViewInfo};
+pub use gfx_pipeline::{Material, Transparency, ViewInfo};
 pub use gfx_scene as base;
 
 

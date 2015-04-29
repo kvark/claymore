@@ -22,6 +22,7 @@ pub struct Game {
 #[derive(RustcDecodable)]
 pub struct GameChar {
     pub scene: String,
+    pub alpha_test: u8,
     pub direction: Direction,
     pub health: u32,
 }

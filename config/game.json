@@ -3,11 +3,13 @@
 	"characters": {
 		"vika": {
 			"scene": "data/vika",
+			"alpha_test": 20,
 			"direction": "North",
 			"health": 30
 		},
 		"valefor": {
 			"scene": "data/valefor",
+			"alpha_test": 20,
 			"direction": "West",
 			"health": 100
 		}
