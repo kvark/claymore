@@ -14,6 +14,7 @@ pub fn main() {
         .with_title("Claymore".to_string())
         .with_vsync()
         .with_gl(glutin::GlRequest::Specific(glutin::Api::OpenGl, (3, 2)))
+        .with_srgb(Some(true))
         .build().unwrap();
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
 

@@ -56,11 +56,11 @@ def cook_mat(mat,log):
 	}
 
 
-def cook_space(matrix, log):
+def cook_space(matrix, name, log):
 	pos, rot, sca = matrix.decompose()
 	scale = (sca.x + sca.y + sca.z)/3.0
 	if sca.x*sca.x+sca.y*sca.y+sca.z*sca.z > 0.01 + sca.x*sca.y+sca.y*sca.z+sca.z*sca.x:
-		log.log(1,'w', 'Non-uniform scale: (%.1f,%.1f,%.1f)' % sca.to_tuple(1))
+		log.log(1,'w', 'Non-uniform scale (%.1f,%.1f,%.1f) on %s' % (sca.x, sca.y, sca.z, name))
 	return {
 		'pos'	: list(pos),
 		'rot'	: [rot.x, rot.y, rot.z, rot.w],
@@ -70,7 +70,7 @@ def cook_space(matrix, log):
 def cook_node(ob, log):
 	return {
 		'name'		: ob.name,
-		'space'		: cook_space(ob.matrix_local, log),
+		'space'		: cook_space(ob.matrix_local, ob.name, log),
 		'children'	: [],
 		'actions'	: [],
 	}
@@ -119,7 +119,7 @@ def cook_armature(arm, log):
 			mx = b.parent.matrix_local.copy().inverted() * mx
 		ob = {
 			'name'		: b.name,
-			'space'		: cook_space(mx, log),
+			'space'		: cook_space(mx, b.name, log),
 			'children'	: [],
 		}
 		par['children'].append(ob)
