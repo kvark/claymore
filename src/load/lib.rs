@@ -79,6 +79,8 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
                 let size = file.metadata().unwrap().len() as u32;
                 let mut reader = chunk::Root::new(path_str.to_string(), file);
                 while reader.get_pos() < size {
+                    debug_assert_eq!(reader.tell(), reader.get_pos());
+                    debug!("Current position {}/{}", reader.get_pos(), size);
                     let (name, success) = try!(mesh::load(&mut reader, self.factory));
                     let full_name = format!("{}@{}", name, path_str);
                     self.cache.meshes.insert(full_name, success);
@@ -96,11 +98,14 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
             None => (),
         }
         let mut split = path.split('@');
-        split.next().unwrap();  //skip name
+        let _name = split.next().unwrap();
         match split.next() {
             Some(container) => {
                 try!(self.read_mesh_collection(container));
-                Ok(self.cache.meshes[path].clone())
+                match self.cache.meshes.get(path) {
+                    Some(m) => Ok(m.clone()),
+                    None => Err(mesh::Error::NameNotInCollection),
+                }
             },
             None => Err(mesh::Error::Other),
         }

@@ -102,7 +102,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
         let bound_min = cgmath::Point3::new(-100.0, -100.0, -100.0);
         let bound_max = cgmath::Point3::new(1000.0, 1000.0, 1000.0);
         this.entities.push(gfx_scene::Entity {
-            name: ent.mesh.clone(),
+            name: ent.node.clone(),
             visible: true,
             material: material,
             mesh: mesh,

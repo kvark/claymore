@@ -10,14 +10,6 @@ authors = [
 name = "claymore"
 path = "src/main.rs"
 
-[[example]]
-name = "viewer"
-path = "examples/viewer/bin.rs"
-
-[[example]]
-name = "forest"
-path = "examples/forest/bin.rs"
-
 # Dependencies
 
 [dependencies]
@@ -45,6 +37,17 @@ git = "https://github.com/gfx-rs/gfx-rs"
 git = "https://github.com/gfx-rs/gfx_window_glutin"
 
 # Examples
+
+[[example]]
+name = "viewer"
+path = "examples/viewer/bin.rs"
+
+[[example]]
+name = "forest"
+path = "examples/forest/bin.rs"
+
+[dev_dependencies]
+rustc-serialize = "*"
 
 [dev_dependencies.cgmath]
 git = "https://github.com/bjz/cgmath-rs"

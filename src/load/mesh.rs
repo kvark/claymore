@@ -37,6 +37,7 @@ fn parse_type(type_: char, normalized: u8) -> Result<gfx::attrib::Type, ()> {
 #[derive(Debug)]
 pub enum Error {
     Path(io::Error),
+    NameNotInCollection,
     Chunk(String),
     Signature(String),
     Topology(String),

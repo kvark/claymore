@@ -12,6 +12,12 @@ pub struct Root<R> {
     position: u32,
 }
 
+impl<R: io::Seek> Root<R> {
+    pub fn tell(&mut self) -> u32 {
+        self.input.seek(io::SeekFrom::Current(0)).unwrap() as u32
+    }
+}
+
 impl<R: io::Read> Root<R> {
     pub fn new(name: String, input: R) -> Root<R> {
         Root {
@@ -64,7 +70,6 @@ impl<R: io::Read> Root<R> {
     }
 
     pub fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
-        self.position += 4 + NAME_LENGTH;
         let name = {
             let raw = self.read_bytes(NAME_LENGTH);
             let buf = match raw.position_elem(&0) {

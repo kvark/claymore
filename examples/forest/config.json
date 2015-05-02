@@ -1,0 +1,33 @@
+{
+	"name": "Forest Generator",
+	"palette": {
+		"scene": "data/nature",
+		"size": "3",
+		"tiles": [
+			{
+				"name": "Mesh1 Plate_Grass Model",
+				"river": ""
+			},
+			{
+				"name": "Mesh1 Plate_Grass_Dirt Model",
+				"river": ""
+			},
+			{
+				"name": "Mesh1 Plate_River Model",
+				"river": "ns"
+			},
+			{
+				"name": "Mesh1 Plate_River_Corner Model",
+				"river": "nw"
+			},
+			{
+				"name": "Mesh1 Plate_River_Corner_Dirt Model",
+				"river": "nw"
+			},
+			{
+				"name": "Mesh1 Plate_River_Dirt Model",
+				"river": "ns"
+			}
+		]
+	}
+}
