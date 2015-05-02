@@ -10,6 +10,10 @@ authors = [
 name = "claymore"
 path = "src/main.rs"
 
+[[example]]
+name = "viewer"
+path = "examples/viewer/bin.rs"
+
 # Dependencies
 
 [dependencies]
