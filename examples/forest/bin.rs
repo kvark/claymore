@@ -1,5 +1,8 @@
+#[macro_use]
+extern crate log;
 extern crate env_logger;
 extern crate rustc_serialize;
+extern crate rand;
 extern crate cgmath;
 extern crate glutin;
 extern crate gfx;
@@ -15,6 +18,19 @@ struct TileInfo<R: gfx::Resources> {
     slice: gfx::Slice<R>,
     material: gfx_pipeline::Material<R>,
     river_mask: u8,
+}
+
+impl<R: gfx::Resources> TileInfo<R> {
+    pub fn fit_orientation(&self, neighbors: u8, rivers: u8) -> Option<u8> {
+        let mut mask = self.river_mask;
+        for i in 0u8.. 4 {
+            if (mask & neighbors) == rivers {
+                return Some(i)
+            }
+            mask = (mask >> 1) | ((mask & 1) << 3);
+        }
+        None
+    }
 }
 
 
@@ -74,7 +90,97 @@ fn main() {
     }).collect();
 
     println!("Generating content...");
-    //TODO
+    {
+        use std::collections::HashMap;
+        type Position = (i32, i32);
+        struct Tile {
+            info_id: usize,
+            orientation: u8,
+        }
+        let mut tile_map: HashMap<Position, Tile> = HashMap::new();
+        for y in -10i32 ..10 {
+            for x in -10i32 ..10 {
+                if tile_map.contains_key(&(x,y)) {
+                    continue
+                }
+                // figure out what neighbour edges are rivers
+                let mut river_mask = 0;
+                let mut neighbour_mask = 0;
+                let offsets = [[0, 1], [1, 0], [0,-1], [-1, 0]];
+                for (bit, off) in offsets.iter().enumerate() {
+                    let pos = (x + off[0], y + off[1]);
+                    if let Some(tile) = tile_map.get(&pos) {
+                        neighbour_mask |= 1 << bit;
+                        let river_bit = (tile.orientation + 2) & 3;
+                        let info = &tile_info[tile.info_id];
+                        if info.river_mask & river_bit != 0 {
+                            river_mask |= 1 << bit;
+                        }
+                    }
+                }
+                // find a matching prototype
+                let mut matched = 0;
+                for info in tile_info.iter() {
+                    if info.fit_orientation(neighbour_mask, river_mask).is_some() {
+                        matched += 1;
+                    }
+                }
+                if matched == 0 {
+                    error!("Couldn't find a tile match for {:?}, where neighbors = {}, rivers = {}",
+                        (x, y), neighbour_mask, river_mask);
+                    continue
+                }
+                let chosen = matched / 2; //TODO: random
+                matched = 0;
+                for (id, info) in tile_info.iter().enumerate() {
+                    match info.fit_orientation(neighbour_mask, river_mask) {
+                        Some(orientation) if matched == chosen => {
+                            use cgmath::ToRad;
+                            let tile = Tile {
+                                info_id: id,
+                                orientation: orientation,
+                            };
+                            let size = config.palette.size;
+                            let node = scene.world.add_node(
+                                format!("Tile ({}, {})", x, y),
+                                claymore_scene::space::Parent::None,
+                                cgmath::Decomposed {
+                                    scale: 1.0,
+                                    rot: cgmath::Rotation3::from_axis_angle(
+                                        &cgmath::Vector3::new(1.0, 0.0, 0.0),
+                                        cgmath::deg(orientation as f32 * 90.0).to_rad(),
+                                    ),
+                                    disp: cgmath::Vector3::new(
+                                        x as f32 * size,
+                                        y as f32 * size,
+                                        0.0,
+                                    ),
+                                });
+                            let entity = claymore_scene::base::Entity {
+                                name: String::new(),
+                                visible: true,
+                                material: info.material.clone(),
+                                mesh: info.mesh.clone(),
+                                slice: info.slice.clone(),
+                                node: node,
+                                skeleton: None,
+                                bound: cgmath::Aabb3::new(
+                                    cgmath::Point3::new(0.0, 0.0, 0.0),
+                                    cgmath::Point3::new(size, size, 1.0),
+                                ),
+                            };
+                            scene.entities.push(entity);
+                            tile_map.insert((x, y), tile);
+                        }
+                        Some(_) => {
+                            matched += 1;
+                        }
+                        None => (),
+                    }
+                }
+            }
+        }
+    }
 
     println!("Initializing the graphics...");
     let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut canvas.factory)

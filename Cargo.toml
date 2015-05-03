@@ -47,6 +47,8 @@ name = "forest"
 path = "examples/forest/bin.rs"
 
 [dev_dependencies]
+log = "*"
+rand = "*"
 rustc-serialize = "*"
 
 [dev_dependencies.cgmath]
