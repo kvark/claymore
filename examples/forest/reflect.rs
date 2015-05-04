@@ -1,6 +1,8 @@
 #[derive(RustcDecodable)]
 pub struct Demo {
     pub name: String,
+    pub generate: bool,
+    pub size: (i32, i32),
     pub palette: Palette,
 }
 

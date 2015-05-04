@@ -13,10 +13,15 @@ extern crate claymore_scene;
 
 mod reflect;
 
-struct TileInfo<R: gfx::Resources> {
+struct TileComponent<R: gfx::Resources> {
     mesh: gfx::Mesh<R>,
     slice: gfx::Slice<R>,
     material: gfx_pipeline::Material<R>,
+}
+
+struct TileInfo<R: gfx::Resources> {
+    node: claymore_scene::NodeId<f32>,
+    components: Vec<TileComponent<R>>,
     river_mask: u8,
 }
 
@@ -27,10 +32,21 @@ impl<R: gfx::Resources> TileInfo<R> {
             if (mask & neighbors) == rivers {
                 return Some(i)
             }
-            mask = (mask >> 1) | ((mask & 1) << 3);
+            mask = ((mask << 1) & 0xF) | (mask >> 3);
         }
         None
     }
+}
+
+fn move_camera<S: cgmath::BaseFloat>(
+    camera: &claymore_scene::Camera<S>,
+    vec: &cgmath::Vector3<S>,
+    world: &mut claymore_scene::World<S>
+){
+    use cgmath::{Transform, Vector};
+    let node = world.mut_node(camera.node);
+    let cam_offset = node.local.transform_vector(vec);
+    node.local.disp.add_self_v(&cam_offset);
 }
 
 
@@ -56,7 +72,7 @@ fn main() {
 
     println!("Creating the window...");
     let window = glutin::WindowBuilder::new()
-        .with_title(config.name)
+        .with_title("Forest generator".to_string())
         .with_vsync()
         .with_gl(glutin::GL_CORE)
         .build().unwrap();
@@ -66,43 +82,61 @@ fn main() {
     let mut scene = claymore_load::Context::new(&mut canvas.factory, root)
                                            .load_scene(&config.palette.scene)
                                            .unwrap();
-    for ent in scene.entities.iter_mut() {
-        ent.visible = false;
+    scene.world.update();
+    if config.generate {
+        for ent in scene.entities.iter_mut() {
+            ent.visible = false;
+        }
     }
 
     println!("Processing data...");
     let tile_info: Vec<_> = config.palette.tiles.iter().map(|t| {
-        let entity = scene.entities.iter().find(|ent| ent.name == t.name)
-                          .expect(&format!("Unable to find tile {:?}", t.name));
-        let rmask = t.river.chars().fold(0, |m, c| match c {
+        let mask = t.river.chars().fold(0, |m, c| match c {
             'n' => m | 1,
             'e' => m | 2,
             's' => m | 4,
             'w' => m | 8,
             _   => panic!("Unknown river direction: {}", c),
         });
+        let node = scene.entities.iter()    //TODO
+                                 .find(|ent| ent.name == t.name)
+                                 .map(|ent| ent.node.clone())
+                                 .unwrap();
+        let components: Vec<_> = scene.entities.iter()
+                                               .filter(|ent| ent.name == t.name)
+                                               .map(|ent|
+            TileComponent {
+                mesh: ent.mesh.clone(),
+                slice: ent.slice.clone(),
+                material: ent.material.clone(),
+            }
+        ).collect();
+        info!("Found tile {} with {} components and river mask {}",
+            t.name, components.len(), mask);
         TileInfo {
-            mesh: entity.mesh.clone(),
-            slice: entity.slice.clone(),
-            material: entity.material.clone(),
-            river_mask: rmask,
+            node: node,
+            components: components,
+            river_mask: mask,
         }
     }).collect();
 
     println!("Generating content...");
-    {
+    if config.generate {
         use std::collections::HashMap;
         type Position = (i32, i32);
         struct Tile {
             info_id: usize,
             orientation: u8,
         }
+        let mut rng = rand::thread_rng();
         let mut tile_map: HashMap<Position, Tile> = HashMap::new();
-        for y in -10i32 ..10 {
-            for x in -10i32 ..10 {
+        for y in -config.size.0 ..config.size.0 {
+            for x in -config.size.1 ..config.size.1 {
+                use rand::Rng;
                 if tile_map.contains_key(&(x,y)) {
                     continue
                 }
+                debug!("Generating tile {:?}", (x,y));
                 // figure out what neighbour edges are rivers
                 let mut river_mask = 0;
                 let mut neighbour_mask = 0;
@@ -111,13 +145,15 @@ fn main() {
                     let pos = (x + off[0], y + off[1]);
                     if let Some(tile) = tile_map.get(&pos) {
                         neighbour_mask |= 1 << bit;
-                        let river_bit = (tile.orientation + 2) & 3;
+                        let river_bit = ((bit as u8) + 6 - tile.orientation) & 3;
+                            debug!("\tChecking for river bit {} of neighbor dir {}", river_bit, bit);
                         let info = &tile_info[tile.info_id];
-                        if info.river_mask & river_bit != 0 {
+                        if info.river_mask & (1 << river_bit) != 0 {
                             river_mask |= 1 << bit;
                         }
                     }
                 }
+                debug!("\tLooking for river mask {} of neighbors {}", river_mask, neighbour_mask);
                 // find a matching prototype
                 let mut matched = 0;
                 for info in tile_info.iter() {
@@ -130,47 +166,60 @@ fn main() {
                         (x, y), neighbour_mask, river_mask);
                     continue
                 }
-                let chosen = matched / 2; //TODO: random
+                let chosen = rng.gen_range(0, matched);
+                debug!("\tChosen match {} of total {}", chosen, matched);
                 matched = 0;
                 for (id, info) in tile_info.iter().enumerate() {
                     match info.fit_orientation(neighbour_mask, river_mask) {
                         Some(orientation) if matched == chosen => {
                             use cgmath::ToRad;
-                            let tile = Tile {
-                                info_id: id,
-                                orientation: orientation,
-                            };
+                            debug!("\tUsing orientation {} and info id {}", orientation, id);
                             let size = config.palette.size;
+                            let rotation = {
+                                use cgmath::Rotation;
+                                use claymore_scene::base::World;
+                                let relative: cgmath::Quaternion<_> = cgmath::Rotation3::from_axis_angle(
+                                    &cgmath::Vector3::new(0.0, 0.0, -1.0),
+                                    cgmath::deg(orientation as f32 * 90.0).to_rad(),
+                                );
+                                let node = tile_info[id].node;
+                                relative.concat(&scene.world.get_transform(&node).rot)
+                            };
+                            let (rot_x, rot_y) = [(0, 0), (0, 1), (1, 1), (1, 0)][orientation as usize];
                             let node = scene.world.add_node(
                                 format!("Tile ({}, {})", x, y),
                                 claymore_scene::space::Parent::None,
                                 cgmath::Decomposed {
                                     scale: 1.0,
-                                    rot: cgmath::Rotation3::from_axis_angle(
-                                        &cgmath::Vector3::new(1.0, 0.0, 0.0),
-                                        cgmath::deg(orientation as f32 * 90.0).to_rad(),
-                                    ),
+                                    rot: rotation,
                                     disp: cgmath::Vector3::new(
-                                        x as f32 * size,
-                                        y as f32 * size,
+                                        (x + rot_x) as f32 * size,
+                                        (y + rot_y) as f32 * size,
                                         0.0,
                                     ),
                                 });
-                            let entity = claymore_scene::base::Entity {
-                                name: String::new(),
-                                visible: true,
-                                material: info.material.clone(),
-                                mesh: info.mesh.clone(),
-                                slice: info.slice.clone(),
-                                node: node,
-                                skeleton: None,
-                                bound: cgmath::Aabb3::new(
-                                    cgmath::Point3::new(0.0, 0.0, 0.0),
-                                    cgmath::Point3::new(size, size, 1.0),
-                                ),
-                            };
-                            scene.entities.push(entity);
-                            tile_map.insert((x, y), tile);
+                            // add entities to the scene
+                            scene.entities.extend(tile_info[id].components.iter().map(|comp|
+                                claymore_scene::base::Entity {
+                                    name: String::new(),
+                                    visible: true,
+                                    material: comp.material.clone(),
+                                    mesh: comp.mesh.clone(),
+                                    slice: comp.slice.clone(),
+                                    node: node,
+                                    skeleton: None,
+                                    bound: cgmath::Aabb3::new(
+                                        cgmath::Point3::new(0.0, 0.0, 0.0),
+                                        cgmath::Point3::new(size, 0.5, -size),
+                                    ),
+                                }
+                            ));
+                            // register the new tile
+                            tile_map.insert((x, y), Tile {
+                                info_id: id,
+                                orientation: orientation,
+                            });
+                            break;
                         }
                         Some(_) => {
                             matched += 1;
@@ -198,11 +247,24 @@ fn main() {
     println!("Rendering...");
     'main: loop {
         for event in canvas.output.window.poll_events() {
+            // TODO: use the scroll
             use glutin::{Event, VirtualKeyCode};
             match event {
+                Event::Closed => break 'main,
                 Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) =>
                     break 'main,
-                Event::Closed => break 'main,
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::A)) =>
+                    move_camera(&camera, &cgmath::vec3(-1.0, 0.0, 0.0), &mut scene.world),
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::D)) =>
+                    move_camera(&camera, &cgmath::vec3(1.0, 0.0, 0.0),  &mut scene.world),
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::S)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, -1.0, 0.0), &mut scene.world),
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::W)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, 1.0, 0.0),  &mut scene.world),
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::E)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, -1.0), &mut scene.world),
+                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Q)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, 1.0),  &mut scene.world),
                 _ => {},
             }
         }

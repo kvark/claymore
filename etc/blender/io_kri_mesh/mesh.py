@@ -200,19 +200,17 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 			storage = layer.data[face.loop_start : loop_end]
 			cur = tuple(mathutils.Vector(x.color) for x in storage)
 			colors.append(cur)
-		if face.loop_total >= 3:
-			ar_face.append( Face(face, mesh, (0,1,2), uves,colors) )
-		if face.loop_total >= 4:
-			ar_face.append( Face(face, mesh, (0,2,3), uves,colors) )
+		for i in range(2, face.loop_total):
+			ar_face.append(Face(face, mesh, (0,i-1,i), uves, colors))
 	#else: log.logu(1,'converted to tri-mesh')
 	if not 'ClearNonUV':
 		n_bad_face =	len(ar_face)
 		ar_face = list(filter( lambda f: f.ta!=None, ar_face ))
 		n_bad_face -=	len(ar_face)
 		if n_bad_face:
-			log.log(1,'w','%d pure faces detected' % (n_bad_face))
+			log.log(1, 'w', '%d pure faces detected' % (n_bad_face))
 	if not len(ar_face):
-		log.log(1,'e','object has no faces')
+		log.log(1, 'e', 'object has no faces')
 		return (None, [])
 
 	# 1.5: face indices

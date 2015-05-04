@@ -1,5 +1,7 @@
 {
 	"name": "Forest Generator",
+	"generate": true,
+	"size": [10, 10],
 	"palette": {
 		"scene": "data/nature",
 		"size": "3",
