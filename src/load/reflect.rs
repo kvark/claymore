@@ -36,10 +36,15 @@ pub struct Space<S> {
 pub struct Entity {
     pub node: String,
     pub mesh: String,
-    pub range: (u32, u32),
     pub armature: String,
-    pub material: String,
+    pub fragments: Vec<Fragment>,
     pub actions: Vec<Action>,
+}
+
+#[derive(RustcDecodable)]
+pub struct Fragment {
+    pub material: String,
+    pub slice: (u32, u32),
 }
 
 #[derive(RustcDecodable)]

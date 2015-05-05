@@ -280,24 +280,26 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 				(_, face_num) = save_mesh(out_mesh, ob, log)
 			else:
 				(_, face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
-			offset = 0
 			if ob.data.materials == []:
 				log.log(1, 'w', 'No materials detected')
+			has_arm = ob.parent and ob.parent.type == 'ARMATURE'
+			current = {
+				'node'		: ob.name,
+				'mesh'		: '%s@%s' % (ob.data.name, collection_mesh),
+				'armature'	: ob.parent.data.name if has_arm else '',
+				'fragments' : [],
+				'actions'	: [],
+			}
+			entities.append(current)
+			offset = 0
 			for fn, m in zip(face_num, ob.data.materials):
 				if not fn: break
 				s = (m.name	if m else '')
 				log.logu(1, '+entity: %d faces, [%s]' % (fn,s))
-				has_arm = ob.parent and ob.parent.type == 'ARMATURE'
-				arm_name = ob.parent.data.name if has_arm else ''
-				current = {
-					'node'		: ob.name,
+				current['fragments'].append({
 					'material'	: s,
-					'mesh'		: '%s@%s' % (ob.data.name, collection_mesh),
-					'range'		: [3*offset, 3*(offset+fn)],
-					'armature'	: arm_name,
-					'actions'	: [],
-				}
-				entities.append(current)
+					'slice'		: [3*offset, 3*(offset+fn)],
+				})
 				offset += fn
 		elif ob.type == 'ARMATURE':
 			arm = cook_armature(ob.data, log)

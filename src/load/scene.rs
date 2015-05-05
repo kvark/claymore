@@ -76,7 +76,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
 
     // read entities and materials
     let mut material_map: HashMap<String, cs::Material<R>> = HashMap::new();
-    for ent in raw.entities.iter() {
+    for ent in raw.entities.into_iter() {
         let node = match this.world.find_node(&ent.node) {
             Some(n) => n,
             None => return Err(Error::MissingNode(ent.node.clone())),
@@ -85,32 +85,37 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             Ok(success) => success,
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };
-        let (ra, rb) = ent.range;
-        slice.start = ra as gfx::VertexCount;
-        slice.end = rb as gfx::VertexCount;
-        let material = match material_map.entry(ent.material.clone()) {
-            Entry::Occupied(m) => m.get().clone(),
-            Entry::Vacant(v) => match raw.materials.iter().find(|r| r.name == ent.material) {
-                Some(raw_mat) => match super::mat::load(&raw_mat, context) {
-                    Ok(m) => v.insert(m).clone(),
-                    Err(e) => return Err(Error::Material(ent.material.clone(), e)),
-                },
-                None => return Err(Error::Material(
-                    ent.material.clone(), super::mat::Error::NotFound)),
-            },
-        };
         let bound_min = cgmath::Point3::new(-100.0, -100.0, -100.0);
         let bound_max = cgmath::Point3::new(1000.0, 1000.0, 1000.0);
-        this.entities.push(gfx_scene::Entity {
+        let mut entity = gfx_scene::Entity {
             name: ent.node.clone(),
             visible: true,
-            material: material,
             mesh: mesh,
-            slice: slice,
             node: node,
             skeleton: None, //TODO
             bound: cgmath::Aabb3::new(bound_min, bound_max), //TODO
-        });
+            fragments: Vec::new(),
+        };
+        for frag in ent.fragments.into_iter() {
+            slice.start = frag.slice.0 as gfx::VertexCount;
+            slice.end   = frag.slice.1 as gfx::VertexCount;
+            let material = match material_map.entry(frag.material.clone()) {
+                Entry::Occupied(m) => m.get().clone(),
+                Entry::Vacant(v) => match raw.materials.iter().find(|r| r.name == frag.material) {
+                    Some(raw_mat) => match super::mat::load(&raw_mat, context) {
+                        Ok(m) => v.insert(m).clone(),
+                        Err(e) => return Err(Error::Material(frag.material, e)),
+                    },
+                    None => return Err(Error::Material(
+                        frag.material, super::mat::Error::NotFound)),
+                },
+            };
+            entity.fragments.push(gfx_scene::Fragment {
+                material: material,
+                slice: slice.clone(),
+            });
+        }
+        this.entities.push(entity);
     }
     // done
     Ok(())

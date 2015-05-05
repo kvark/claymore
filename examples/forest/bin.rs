@@ -13,15 +13,11 @@ extern crate claymore_scene;
 
 mod reflect;
 
-struct TileComponent<R: gfx::Resources> {
-    mesh: gfx::Mesh<R>,
-    slice: gfx::Slice<R>,
-    material: gfx_pipeline::Material<R>,
-}
 
 struct TileInfo<R: gfx::Resources> {
     node: claymore_scene::NodeId<f32>,
-    components: Vec<TileComponent<R>>,
+    mesh: gfx::Mesh<R>,
+    fragments: Vec<claymore_scene::Fragment<R>>,
     river_mask: u8,
 }
 
@@ -98,24 +94,15 @@ fn main() {
             'w' => m | 8,
             _   => panic!("Unknown river direction: {}", c),
         });
-        let node = scene.entities.iter()    //TODO
-                                 .find(|ent| ent.name == t.name)
-                                 .map(|ent| ent.node.clone())
-                                 .unwrap();
-        let components: Vec<_> = scene.entities.iter()
-                                               .filter(|ent| ent.name == t.name)
-                                               .map(|ent|
-            TileComponent {
-                mesh: ent.mesh.clone(),
-                slice: ent.slice.clone(),
-                material: ent.material.clone(),
-            }
-        ).collect();
-        info!("Found tile {} with {} components and river mask {}",
-            t.name, components.len(), mask);
+        let ent = scene.entities.iter()
+                                .find(|ent| ent.name == t.name)
+                                .expect(&format!("Unable to find entity {}", t.name));
+        info!("Found tile {} with river mask {}",
+            t.name, mask);
         TileInfo {
-            node: node,
-            components: components,
+            node: ent.node.clone(),
+            mesh: ent.mesh.clone(),
+            fragments: ent.fragments.clone(),
             river_mask: mask,
         }
     }).collect();
@@ -198,22 +185,19 @@ fn main() {
                                         0.0,
                                     ),
                                 });
-                            // add entities to the scene
-                            scene.entities.extend(tile_info[id].components.iter().map(|comp|
-                                claymore_scene::base::Entity {
-                                    name: String::new(),
-                                    visible: true,
-                                    material: comp.material.clone(),
-                                    mesh: comp.mesh.clone(),
-                                    slice: comp.slice.clone(),
-                                    node: node,
-                                    skeleton: None,
-                                    bound: cgmath::Aabb3::new(
-                                        cgmath::Point3::new(0.0, 0.0, 0.0),
-                                        cgmath::Point3::new(size, 0.5, -size),
-                                    ),
-                                }
-                            ));
+                            // add the new entity to the scene
+                            scene.entities.push(claymore_scene::base::Entity {
+                                name: String::new(),
+                                visible: true,
+                                mesh: tile_info[id].mesh.clone(),
+                                node: node,
+                                skeleton: None,
+                                bound: cgmath::Aabb3::new(
+                                    cgmath::Point3::new(0.0, 0.0, 0.0),
+                                    cgmath::Point3::new(size, 0.5, -size),
+                                ),
+                                fragments: tile_info[id].fragments.clone(),
+                            });
                             // register the new tile
                             tile_map.insert((x, y), Tile {
                                 info_id: id,
