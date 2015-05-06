@@ -122,7 +122,6 @@ fn main() {
                 if offset.1 < 0 {win_size.1 as i32 + offset.1} else {offset.1},
             ];
             let color = [color.0, color.1, color.2, color.3];
-            let voff = 10;
             let strings = [
                 format!("ratio = {}",     report.get_ratio()),
                 format!("invisible = {}", report.calls_invisible),
