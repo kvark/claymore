@@ -8,6 +8,7 @@ extern crate glutin;
 extern crate gfx;
 extern crate gfx_pipeline;
 extern crate gfx_window_glutin;
+extern crate gfx_debug_draw;
 extern crate claymore_load;
 extern crate claymore_scene;
 
@@ -54,6 +55,17 @@ fn main() {
     env_logger::init().unwrap();
     let root = env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string());
 
+    println!("Creating the window...");
+    let window = glutin::WindowBuilder::new()
+        .with_title("Forest generator".to_string())
+        .with_vsync()
+        .with_gl(glutin::GL_CORE)
+        .build().unwrap();
+    let mut canvas = gfx_window_glutin::init(window).into_canvas();
+
+    let mut debug = gfx_debug_draw::DebugRenderer::from_canvas(
+        &mut canvas, 64, None, None).ok().unwrap();
+
     println!("Reading configuration...");
     let config: reflect::Demo = {
         use std::fs::File;
@@ -66,24 +78,11 @@ fn main() {
         json::decode(&s).unwrap()
     };
 
-    println!("Creating the window...");
-    let window = glutin::WindowBuilder::new()
-        .with_title("Forest generator".to_string())
-        .with_vsync()
-        .with_gl(glutin::GL_CORE)
-        .build().unwrap();
-    let mut canvas = gfx_window_glutin::init(window).into_canvas();
-
     println!("Loading asset palette...");
     let mut scene = claymore_load::Context::new(&mut canvas.factory, root)
                                            .load_scene(&config.palette.scene)
                                            .unwrap();
     scene.world.update();
-    if config.generate {
-        for ent in scene.entities.iter_mut() {
-            ent.visible = false;
-        }
-    }
 
     println!("Processing data...");
     let tile_info: Vec<_> = config.palette.tiles.iter().map(|t| {
@@ -115,6 +114,7 @@ fn main() {
             info_id: usize,
             orientation: u8,
         }
+        scene.entities.clear();
         let mut rng = rand::thread_rng();
         let mut tile_map: HashMap<Position, Tile> = HashMap::new();
         for y in -config.size.0 ..config.size.0 {
@@ -256,7 +256,32 @@ fn main() {
         scene.world.update();
 
         camera.projection.aspect = canvas.get_aspect_ratio();
-        pipeline.render(&scene, &camera, &mut canvas).unwrap();
+        let report = pipeline.render(&scene, &camera, &mut canvas).unwrap();
+
+        {
+            let win_size = canvas.output.get_size();
+            let color = config.debug.color;
+            let offset = config.debug.offset;
+            let mut offset = [
+                if offset.0 < 0 {win_size.0 as i32 + offset.0} else {offset.0},
+                if offset.1 < 0 {win_size.1 as i32 + offset.1} else {offset.1},
+            ];
+            let color = [color.0, color.1, color.2, color.3];
+            let voff = 10;
+            let strings = [
+                format!("ratio = {}",     report.get_ratio()),
+                format!("invisible = {}", report.calls_invisible),
+                format!("culled = {}",    report.calls_culled),
+                format!("rejected = {}",  report.calls_rejected),
+                format!("failed = {}",    report.calls_failed),
+                format!("passed = {}",    report.calls_passed),
+            ];
+            for s in strings.iter() {
+                debug.draw_text_on_screen(s, offset, color);
+                offset[1] += config.debug.line_jump;
+            }
+        }
+        debug.render_canvas(&mut canvas, [[0.0; 4]; 4]);
 
         canvas.present();
     }
