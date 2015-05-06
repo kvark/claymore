@@ -67,7 +67,7 @@ fn main() {
 
     if config.generate {
         let gen = generate::Gen::new(&config.palette, &scene);
-        gen.populate(config.size, &mut scene);
+        gen.populate(&config.palette.model, &mut scene);
     }
 
     println!("Initializing the graphics...");

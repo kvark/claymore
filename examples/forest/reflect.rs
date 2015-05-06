@@ -2,7 +2,6 @@
 pub struct Demo {
     pub name: String,
     pub generate: bool,
-    pub size: (i32, i32),
     pub debug: Debug,
     pub palette: Palette,
 }
@@ -18,7 +17,19 @@ pub struct Debug {
 pub struct Palette {
     pub scene: String,
     pub size: f32,
+    pub model: Model,
     pub tiles: Vec<Tile>,
+    pub water_plants: Vec<String>,
+    pub plants: Vec<String>,
+    pub tents: Vec<String>,
+}
+
+#[derive(RustcDecodable)]
+pub struct Model {
+	pub grid_size: (i32, i32),
+	pub water_plant_chance: f32,
+	pub plant_chance: f32,
+	pub max_plants: u8,
 }
 
 #[derive(RustcDecodable)]

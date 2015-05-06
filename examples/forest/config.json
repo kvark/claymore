@@ -1,7 +1,6 @@
 {
 	"name": "Forest Generator",
 	"generate": true,
-	"size": [10, 10],
 	"debug": {
 		"offset": [-150, 10],
 		"line_jump": 20,
@@ -10,6 +9,12 @@
 	"palette": {
 		"scene": "data/nature",
 		"size": "3",
+		"model": {
+			"grid_size": [10, 10],
+			"water_plant_chance": 0.2,
+			"plant_chance": 0.3,
+			"max_plants": 4
+		},
 		"tiles": [
 			{
 				"name": "Mesh1 Plate_Grass Model",
@@ -35,6 +40,24 @@
 				"name": "Mesh1 Plate_River_Dirt Model",
 				"river": "ns"
 			}
+		],
+		"water_plants": [
+			"Mesh1 Water_lily Model"
+		],
+		"plants": [
+			"Mesh1 Plant_1 Model",
+			"Mesh1 Plant_2 Model",
+			"Mesh1 Plant_3 Model",
+			"Mesh1 Oak_Dark Model",
+			"Mesh1 Oak_Fall Model",
+			"Mesh1 Oak_Green Model",
+			"Mesh1 Large_Oak_Dark Model",
+			"Mesh1 Large_Oak_Fall Model",
+			"Mesh1 Large_Oak_Green Model"
+		],
+		"tents": [
+			"Mesh1 Tent Model",
+			"Mesh1 Tent_Poles Model"
 		]
 	}
 }
