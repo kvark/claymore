@@ -360,7 +360,6 @@ impl<R: gfx::Resources> Gen<R> {
             // water plants
             if river_mask != 0 && rng.next_f32() < model.water_plant_chance {
                 let plant_type = rng.gen_range(0, self.water_plants.len());
-                let plant_drawable = &self.water_plants[plant_type];
                 debug!("Generating water plant type {} on tile ({}, {}) with mask {}",
                     plant_type, x, y, river_mask);
                 let spots = self.get_water_spots(river_mask);
@@ -371,6 +370,7 @@ impl<R: gfx::Resources> Gen<R> {
                 scene.entities.push(entity);
             }
             // plants
+            let spots = self.get_grass_spots(river_mask);
             let max_plants = if river_mask != 0 {
                 model.max_river_plants
             } else {
@@ -381,10 +381,8 @@ impl<R: gfx::Resources> Gen<R> {
                     continue
                 }
                 let plant_type = rng.gen_range(0, self.plants.len());
-                let plant_drawable = &self.plants[plant_type];
                 debug!("Generating plant type {} on tile ({}, {}) with mask {}",
                     plant_type, x, y, river_mask);
-                let spots = self.get_grass_spots(river_mask);
                 let position = spots[rng.gen_range(0, spots.len())];
                 let entity = self.make_prop(tile.node, &self.plants[plant_type],
                     position, 0.2, cgmath::Point3::new(3.0, 6.0, -3.0),

@@ -22,9 +22,15 @@ fn move_camera<S: cgmath::BaseFloat>(
     vec: &cgmath::Vector3<S>,
     world: &mut claymore_scene::World<S>
 ){
-    use cgmath::{Transform, Vector};
+    use cgmath::{Transform, Vector, zero};
     let node = world.mut_node(camera.node);
-    let cam_offset = node.local.transform_vector(vec);
+    let mut cam_offset = node.local.transform_vector(vec);
+    if vec.z != zero() {
+        cam_offset.x = zero();
+        cam_offset.y = zero();
+    }else {
+        cam_offset.z = zero();
+    }
     node.local.disp.add_self_v(&cam_offset);
 }
 
