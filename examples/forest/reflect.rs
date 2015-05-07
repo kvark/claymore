@@ -23,15 +23,17 @@ pub struct Palette {
     pub water_plants: Vec<String>,
     pub plants: Vec<String>,
     pub tents: Vec<String>,
+    pub camp_fires: Vec<String>,
 }
 
 #[derive(RustcDecodable)]
 pub struct Model {
-	pub grid_size: (i32, i32),
-	pub water_plant_chance: f32,
-	pub plant_chance: f32,
-	pub max_grass_plants: u8,
-	pub max_river_plants: u8,
+    pub grid_size: (i32, i32),
+    pub water_plant_chance: f32,
+    pub plant_chance: f32,
+    pub max_grass_plants: u8,
+    pub max_river_plants: u8,
+    pub tent_chance: f32,
 }
 
 #[derive(RustcDecodable)]

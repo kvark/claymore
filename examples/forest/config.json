@@ -15,7 +15,8 @@
 			"water_plant_chance": 0.2,
 			"plant_chance": 0.3,
 			"max_grass_plants": 5,
-			"max_river_plants": 2
+			"max_river_plants": 2,
+			"tent_chance": 0.2
 		},
 		"tiles": [
 			{
@@ -66,6 +67,9 @@
 		"tents": [
 			"Mesh1 Tent Model",
 			"Mesh1 Tent_Poles Model"
+		],
+		"camp_fires": [
+			"Mesh1 Campfire Model"
 		]
 	}
 }

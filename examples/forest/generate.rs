@@ -181,14 +181,15 @@ impl<R: gfx::Resources> Gen<R> {
         spots
     }
 
-    fn get_grass_spots(&self, river_mask: u8) -> Vec<(f32, f32)> {
+    fn get_grass_spots(&self, river_mask: u8, has_tent: bool)
+                       -> Vec<(f32, f32)> {
         let mut spots = vec![
             (0.1, 0.1),
             (0.9, 0.1),
             (0.1, 0.9),
             (0.9, 0.9),
         ];
-        if river_mask == 0 {
+        if river_mask == 0 && !has_tent {
             spots.push((0.5, 0.5));
         }
         if river_mask & 1 == 0 {
@@ -369,21 +370,33 @@ impl<R: gfx::Resources> Gen<R> {
                     &mut scene.world);
                 scene.entities.push(entity);
             }
+            // tents
+            let mut has_tent = false;
+            if river_mask == 0 && rng.next_f32() < model.tent_chance {
+                let tent_type = rng.gen_range(0, self.tents.len());
+                debug!("Generating tent type {} on tile ({}, {})", tent_type, x, y);
+                let entity = self.make_prop(tile.node, &self.tents[tent_type],
+                    (0.5, 0.5), 0.2, cgmath::Point3::new(3.0, 3.0, -3.0),
+                    &mut scene.world);
+                scene.entities.push(entity);
+                has_tent = true;
+            }
             // plants
-            let spots = self.get_grass_spots(river_mask);
-            let max_plants = if river_mask != 0 {
+            let mut spots = self.get_grass_spots(river_mask, has_tent);
+            let max_plants = if river_mask != 0 || has_tent {
                 model.max_river_plants
             } else {
                 model.max_grass_plants
             };
             for _ in 0.. max_plants {
-                if rng.next_f32() >= model.plant_chance {
+                if spots.is_empty() || rng.next_f32() >= model.plant_chance {
                     continue
                 }
                 let plant_type = rng.gen_range(0, self.plants.len());
                 debug!("Generating plant type {} on tile ({}, {}) with mask {}",
                     plant_type, x, y, river_mask);
-                let position = spots[rng.gen_range(0, spots.len())];
+                let spot_id = rng.gen_range(0, spots.len());
+                let position = spots.swap_remove(spot_id);
                 let entity = self.make_prop(tile.node, &self.plants[plant_type],
                     position, 0.2, cgmath::Point3::new(3.0, 6.0, -3.0),
                     &mut scene.world);
