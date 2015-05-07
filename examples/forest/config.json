@@ -11,9 +11,9 @@
 		"scene": "data/nature",
 		"size": "3",
 		"model": {
-			"grid_size": [10, 10],
+			"grid_size": [20, 20],
 			"water_plant_chance": 0.2,
-			"plant_chance": 0.2,
+			"plant_chance": 0.3,
 			"max_grass_plants": 5,
 			"max_river_plants": 2
 		},
@@ -55,7 +55,13 @@
 			"Mesh1 Oak_Green Model",
 			"Mesh1 Large_Oak_Dark Model",
 			"Mesh1 Large_Oak_Fall Model",
-			"Mesh1 Large_Oak_Green Model"
+			"Mesh1 Large_Oak_Green Model",
+			"Mesh1 Rock_1 Model",
+			"Mesh1 Rock_2 Model",
+			"Mesh1 Rock_3 Model",
+			"Mesh1 Rock_4 Model",
+			"Mesh1 Rock_5 Model",
+			"Mesh1 Rock_6 Model"
 		],
 		"tents": [
 			"Mesh1 Tent Model",

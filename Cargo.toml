@@ -55,6 +55,9 @@ rustc-serialize = "*"
 [dev_dependencies.cgmath]
 git = "https://github.com/bjz/cgmath-rs"
 
+[dev_dependencies.gfx_phase]
+git = "https://github.com/kvark/gfx_scene"
+
 [dev_dependencies.gfx_pipeline]
 git = "https://github.com/kvark/gfx_pipeline"
 

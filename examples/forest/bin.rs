@@ -7,6 +7,7 @@ extern crate rand;
 extern crate cgmath;
 extern crate glutin;
 extern crate gfx;
+extern crate gfx_phase;
 extern crate gfx_pipeline;
 extern crate gfx_window_glutin;
 extern crate gfx_debug_draw;
@@ -15,6 +16,17 @@ extern crate claymore_scene;
 
 mod generate;
 mod reflect;
+
+
+#[derive(Debug)]
+enum Order {
+    Default,
+    FrontToBack,
+    BackToFront,
+    Material,
+    Mesh,
+    Unordered,
+}
 
 
 fn move_camera<S: cgmath::BaseFloat>(
@@ -92,28 +104,56 @@ fn main() {
 
     let mut last_moment = clock_ticks::precise_time_ns();
     let mut avg_time = 0;
+    let mut order = Order::Default;
 
     println!("Rendering...");
     'main: loop {
         for event in canvas.output.window.poll_events() {
             // TODO: use the scroll
             use glutin::{Event, VirtualKeyCode};
+            use glutin::ElementState::Pressed;
             match event {
                 Event::Closed => break 'main,
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Escape)) =>
                     break 'main,
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::A)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::A)) =>
                     move_camera(&camera, &cgmath::vec3(-1.0, 0.0, 0.0), &mut scene.world),
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::D)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::D)) =>
                     move_camera(&camera, &cgmath::vec3(1.0, 0.0, 0.0),  &mut scene.world),
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::S)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::S)) =>
                     move_camera(&camera, &cgmath::vec3(0.0, -1.0, 0.0), &mut scene.world),
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::W)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::W)) =>
                     move_camera(&camera, &cgmath::vec3(0.0, 1.0, 0.0),  &mut scene.world),
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::E)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::E)) =>
                     move_camera(&camera, &cgmath::vec3(0.0, 0.0, -1.0), &mut scene.world),
-                Event::KeyboardInput(_, _, Some(VirtualKeyCode::Q)) =>
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Q)) =>
                     move_camera(&camera, &cgmath::vec3(0.0, 0.0, 1.0),  &mut scene.world),
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Tab)) => order = match order {
+                    Order::Default => {
+                        pipeline.phase.sort = Some(gfx_phase::sort::front_to_back);
+                        Order::FrontToBack
+                    },
+                    Order::FrontToBack => {
+                        pipeline.phase.sort = Some(gfx_phase::sort::back_to_front);
+                        Order::BackToFront
+                    },
+                    Order::BackToFront => {
+                        pipeline.phase.sort = Some(gfx_phase::sort::program);
+                        Order::Material
+                    },
+                    Order::Material => {
+                        pipeline.phase.sort = Some(gfx_phase::sort::mesh);
+                        Order::Mesh
+                    },
+                    Order::Mesh => {
+                        pipeline.phase.sort = None;
+                        Order::Unordered
+                    },
+                    Order::Unordered => {
+                        pipeline.phase.sort = Some(gfx_pipeline::forward::order);
+                        Order::Default
+                    },
+                },
                 _ => {},
             }
         }
@@ -134,6 +174,7 @@ fn main() {
             let color = [color.0, color.1, color.2, color.3];
             let strings = [
                 format!("frame time = {} ms", avg_time / 1000000),
+                format!("order = {:?}", order),
                 //format!("ratio = {}",     report.get_ratio()),
                 //format!("invisible = {}", report.calls_invisible),
                 format!("calls culled = {}", report.calls_culled),
