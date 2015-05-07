@@ -181,6 +181,31 @@ impl<R: gfx::Resources> Gen<R> {
         spots
     }
 
+    fn get_grass_spots(&self, river_mask: u8) -> Vec<(f32, f32)> {
+        let mut spots = vec![
+            (0.1, 0.1),
+            (0.9, 0.1),
+            (0.1, 0.9),
+            (0.9, 0.9),
+        ];
+        if river_mask == 0 {
+            spots.push((0.5, 0.5));
+        }
+        if river_mask & 1 == 0 {
+            spots.push((0.5, 0.9));
+        }
+        if river_mask & 2 == 0 {
+            spots.push((0.9, 0.5));
+        }
+        if river_mask & 4 == 0 {
+            spots.push((0.5, 0.1));
+        }
+        if river_mask & 8 == 0 {
+            spots.push((0.1, 0.5));
+        }
+        spots
+    }
+
     fn make_tile(&self, x: i32, y: i32, proto_id: usize, orientation: u8,
                  world: &mut claymore_scene::World<f32>)
                  -> claymore_scene::Entity<R, f32> {
@@ -218,6 +243,44 @@ impl<R: gfx::Resources> Gen<R> {
             bound: cgmath::Aabb3::new(
                 cgmath::Point3::new(0.0, 0.0, 0.0),
                 cgmath::Point3::new(self.tile_size, 0.5, -self.tile_size),
+            ),
+            fragments: drawable.fragments.clone(),
+        }
+    }
+
+    fn make_prop(&self, base_node: claymore_scene::NodeId<f32>,
+                 drawable: &Drawable<R>, position: (f32, f32), z: f32,
+                 size: cgmath::Point3<f32>,
+                 world: &mut claymore_scene::World<f32>)
+                 -> claymore_scene::Entity<R, f32> {
+        use cgmath::Transform;
+        let rotation = world.get_node(drawable.node)
+                            .local.rot.clone();
+        let local = cgmath::Vector3::new(
+            position.0 * self.tile_size,    //TODO: offset center?
+            z,
+            -position.1 * self.tile_size,
+        );
+        let translation = world.get_node(base_node)
+                               .local.transform_as_point(&local);
+        debug!("Found spot {:?}, ended up at pos {:?}", position, translation);
+        let node = world.add_node(
+            String::new(),
+            claymore_scene::space::Parent::None,
+            cgmath::Decomposed {
+                scale: 1.0,
+                rot: rotation,
+                disp: translation,
+            });
+        claymore_scene::base::Entity {
+            name: String::new(),
+            visible: true,
+            mesh: drawable.mesh.clone(),
+            node: node,
+            skeleton: None,
+            bound: cgmath::Aabb3::new(
+                cgmath::Point3::new(0.0, 0.0, 0.0),
+                size,
             ),
             fragments: drawable.fragments.clone(),
         }
@@ -293,45 +356,39 @@ impl<R: gfx::Resources> Gen<R> {
         // place props
         for (&(x, y), tile) in tile_map.iter() {
             use rand::Rng;
-            use cgmath::Transform;
             let river_mask = self.proto_tiles[tile.proto_id].river_mask;
+            // water plants
             if river_mask != 0 && rng.next_f32() < model.water_plant_chance {
                 let plant_type = rng.gen_range(0, self.water_plants.len());
                 let plant_drawable = &self.water_plants[plant_type];
                 debug!("Generating water plant type {} on tile ({}, {}) with mask {}",
                     plant_type, x, y, river_mask);
                 let spots = self.get_water_spots(river_mask);
-                let (sx, sy) = spots[rng.gen_range(0, spots.len())];
-                let rotation = scene.world.get_node(plant_drawable.node)
-                                          .local.rot.clone();
-                let local = cgmath::Vector3::new(
-                    sx * self.tile_size,    //TODO: offset center?
-                    0.2,
-                    -sy * self.tile_size,
-                );
-                let translation = scene.world.get_node(tile.node)
-                                       .local.transform_as_point(&local);
-                debug!("Found spot ({}, {}), ended up at pos {:?}", sx, sy, translation);
-                let node = scene.world.add_node(
-                    format!("Water plant ({}, {})", x, y),
-                    claymore_scene::space::Parent::None,
-                    cgmath::Decomposed {
-                        scale: 1.0,
-                        rot: rotation,
-                        disp: translation,
-                    });
-                let entity = claymore_scene::base::Entity {
-                    name: String::new(),
-                    visible: true,
-                    mesh: plant_drawable.mesh.clone(),
-                    node: node,
-                    skeleton: None,
-                    bound: cgmath::Aabb3::new(
-                        cgmath::Point3::new(0.0, 0.0, 0.0),
-                        cgmath::Point3::new(1.0, 0.2, -1.0),
-                    ),
-                    fragments: plant_drawable.fragments.clone(),
-                };
+                let position = spots[rng.gen_range(0, spots.len())];
+                let entity = self.make_prop(tile.node, &self.water_plants[plant_type],
+                    position, 0.15, cgmath::Point3::new(1.0, 0.2, -1.0),
+                    &mut scene.world);
+                scene.entities.push(entity);
+            }
+            // plants
+            let max_plants = if river_mask != 0 {
+                model.max_river_plants
+            } else {
+                model.max_grass_plants
+            };
+            for _ in 0.. max_plants {
+                if rng.next_f32() >= model.plant_chance {
+                    continue
+                }
+                let plant_type = rng.gen_range(0, self.plants.len());
+                let plant_drawable = &self.plants[plant_type];
+                debug!("Generating plant type {} on tile ({}, {}) with mask {}",
+                    plant_type, x, y, river_mask);
+                let spots = self.get_grass_spots(river_mask);
+                let position = spots[rng.gen_range(0, spots.len())];
+                let entity = self.make_prop(tile.node, &self.plants[plant_type],
+                    position, 0.2, cgmath::Point3::new(3.0, 6.0, -3.0),
+                    &mut scene.world);
                 scene.entities.push(entity);
             }
         }

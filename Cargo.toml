@@ -47,6 +47,7 @@ name = "forest"
 path = "examples/forest/bin.rs"
 
 [dev_dependencies]
+clock_ticks = "*"
 log = "*"
 rand = "*"
 rustc-serialize = "*"

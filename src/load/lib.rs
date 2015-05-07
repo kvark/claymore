@@ -111,7 +111,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
         }
     }
 
-    pub fn request_texture(&mut self, path_str: &str, srgb: bool,)
+    pub fn request_texture(&mut self, path_str: &str, srgb: bool)
                            -> Result<gfx::TextureHandle<R>, TextureError> {
         match self.cache.textures.entry(path_str.to_string()) {
             Entry::Occupied(v) => v.get().clone(),

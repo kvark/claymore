@@ -17,6 +17,7 @@ pub fn main() {
         .with_srgb(Some(true))
         .build().unwrap();
     let mut canvas = gfx_window_glutin::init(window).into_canvas();
+    let _ = canvas.output.set_gamma(gfx::Gamma::Convert);
 
     println!("Loading the game...");
     let mut app = game::App::new(&mut canvas.factory);

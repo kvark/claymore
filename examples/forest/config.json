@@ -4,7 +4,8 @@
 	"debug": {
 		"offset": [-150, 10],
 		"line_jump": 20,
-		"color": [1.0, 1.0, 1.0, 0.7]
+		"color": [1.0, 0.1, 0.4, 0.7],
+		"time_factor": 5
 	},
 	"palette": {
 		"scene": "data/nature",
@@ -12,8 +13,9 @@
 		"model": {
 			"grid_size": [10, 10],
 			"water_plant_chance": 0.2,
-			"plant_chance": 0.3,
-			"max_plants": 4
+			"plant_chance": 0.2,
+			"max_grass_plants": 5,
+			"max_river_plants": 2
 		},
 		"tiles": [
 			{

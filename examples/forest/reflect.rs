@@ -11,6 +11,7 @@ pub struct Debug {
     pub offset: (i32, i32),
     pub line_jump: i32,
     pub color: (f32, f32, f32, f32),
+    pub time_factor: u64,
 }
 
 #[derive(RustcDecodable)]
@@ -29,7 +30,8 @@ pub struct Model {
 	pub grid_size: (i32, i32),
 	pub water_plant_chance: f32,
 	pub plant_chance: f32,
-	pub max_plants: u8,
+	pub max_grass_plants: u8,
+	pub max_river_plants: u8,
 }
 
 #[derive(RustcDecodable)]

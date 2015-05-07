@@ -1,3 +1,4 @@
+extern crate clock_ticks;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -83,6 +84,9 @@ fn main() {
         }
     };
 
+    let mut last_moment = clock_ticks::precise_time_ns();
+    let mut avg_time = 0;
+
     println!("Rendering...");
     'main: loop {
         for event in canvas.output.window.poll_events() {
@@ -123,12 +127,13 @@ fn main() {
             ];
             let color = [color.0, color.1, color.2, color.3];
             let strings = [
-                format!("ratio = {}",     report.get_ratio()),
-                format!("invisible = {}", report.calls_invisible),
-                format!("culled = {}",    report.calls_culled),
-                format!("rejected = {}",  report.calls_rejected),
-                format!("failed = {}",    report.calls_failed),
-                format!("passed = {}",    report.calls_passed),
+                format!("frame time = {} ms", avg_time / 1000000),
+                //format!("ratio = {}",     report.get_ratio()),
+                //format!("invisible = {}", report.calls_invisible),
+                format!("calls culled = {}", report.calls_culled),
+                //format!("rejected = {}",  report.calls_rejected),
+                //format!("failed = {}",    report.calls_failed),
+                format!("calls passed = {}", report.calls_passed),
             ];
             for s in strings.iter() {
                 debug.draw_text_on_screen(s, offset, color);
@@ -138,6 +143,11 @@ fn main() {
         debug.render_canvas(&mut canvas, [[0.0; 4]; 4]);
 
         canvas.present();
+
+        let moment = clock_ticks::precise_time_ns();
+        avg_time = (avg_time * config.debug.time_factor + moment - last_moment) /
+            (config.debug.time_factor + 1);
+        last_moment = moment;
     }
     println!("Done.");
 }
