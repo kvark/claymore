@@ -68,6 +68,7 @@ impl ops::BitAnd for DirectionSet {
 struct Drawable<R: gfx::Resources> {
     node: claymore_scene::NodeId<f32>,
     mesh: gfx::Mesh<R>,
+    bound: cgmath::Aabb3<f32>,
     fragments: Vec<claymore_scene::Fragment<R>>,
 }
 
@@ -76,6 +77,7 @@ impl<R: gfx::Resources> Drawable<R> {
         Drawable {
             node: ent.node.clone(),
             mesh: ent.mesh.clone(),
+            bound: ent.bound.clone(),
             fragments: ent.fragments.clone(),
         }
     }
@@ -85,7 +87,6 @@ impl<R: gfx::Resources> Drawable<R> {
 struct TileProto<R: gfx::Resources> {
     drawable: Drawable<R>,
     river_mask: u8,
-
 }
 
 impl<R: gfx::Resources> TileProto<R> {
@@ -113,6 +114,7 @@ pub struct Gen<R: gfx::Resources> {
     water_plants: Vec<Drawable<R>>,
     plants: Vec<Drawable<R>>,
     tents: Vec<Drawable<R>>,
+    camp_fires: Vec<Drawable<R>>,
     tile_size: f32,
 }
 
@@ -152,11 +154,17 @@ impl<R: gfx::Resources> Gen<R> {
                           .find(|ent| &ent.name == name)
                           .expect(&format!("Unable to find tent {}", name))
         )).collect();
+        let camp_fires = config.tents.iter().map(|name| Drawable::new(
+            scene.entities.iter()
+                          .find(|ent| &ent.name == name)
+                          .expect(&format!("Unable to find camp fire {}", name))
+        )).collect();
         Gen {
             proto_tiles: protos,
             water_plants: water_plants,
             plants: plants,
             tents: tents,
+            camp_fires: camp_fires,
             tile_size: config.size,
         }
     }
@@ -241,29 +249,26 @@ impl<R: gfx::Resources> Gen<R> {
             mesh: drawable.mesh.clone(),
             node: node,
             skeleton: None,
-            bound: cgmath::Aabb3::new(
-                cgmath::Point3::new(0.0, 0.0, 0.0),
-                cgmath::Point3::new(self.tile_size, 0.5, -self.tile_size),
-            ),
+            bound: drawable.bound.clone(),
             fragments: drawable.fragments.clone(),
         }
     }
 
     fn make_prop(&self, base_node: claymore_scene::NodeId<f32>,
                  drawable: &Drawable<R>, position: (f32, f32), z: f32,
-                 size: cgmath::Point3<f32>,
                  world: &mut claymore_scene::World<f32>)
                  -> claymore_scene::Entity<R, f32> {
-        use cgmath::Transform;
+        use cgmath::{Aabb, Transform};
         let rotation = world.get_node(drawable.node)
                             .local.rot.clone();
-        let local = cgmath::Vector3::new(
-            position.0 * self.tile_size,    //TODO: offset center?
+        let center = drawable.bound.center();
+        let offset = cgmath::Vector3::new(
+            position.0 * self.tile_size - center.x,
             z,
-            -position.1 * self.tile_size,
+            -position.1 * self.tile_size - center.z,
         );
         let translation = world.get_node(base_node)
-                               .local.transform_as_point(&local);
+                               .local.transform_as_point(&offset);
         debug!("Found spot {:?}, ended up at pos {:?}", position, translation);
         let node = world.add_node(
             String::new(),
@@ -279,10 +284,7 @@ impl<R: gfx::Resources> Gen<R> {
             mesh: drawable.mesh.clone(),
             node: node,
             skeleton: None,
-            bound: cgmath::Aabb3::new(
-                cgmath::Point3::new(0.0, 0.0, 0.0),
-                size,
-            ),
+            bound: drawable.bound.clone(),
             fragments: drawable.fragments.clone(),
         }
     }
@@ -366,19 +368,22 @@ impl<R: gfx::Resources> Gen<R> {
                 let spots = self.get_water_spots(river_mask);
                 let position = spots[rng.gen_range(0, spots.len())];
                 let entity = self.make_prop(tile.node, &self.water_plants[plant_type],
-                    position, 0.15, cgmath::Point3::new(1.0, 0.2, -1.0),
-                    &mut scene.world);
+                    position, model.water_height, &mut scene.world);
                 scene.entities.push(entity);
             }
             // tents
             let mut has_tent = false;
             if river_mask == 0 && rng.next_f32() < model.tent_chance {
                 let tent_type = rng.gen_range(0, self.tents.len());
-                debug!("Generating tent type {} on tile ({}, {})", tent_type, x, y);
-                let entity = self.make_prop(tile.node, &self.tents[tent_type],
-                    (0.5, 0.5), 0.2, cgmath::Point3::new(3.0, 3.0, -3.0),
-                    &mut scene.world);
-                scene.entities.push(entity);
+                let tent_entity = self.make_prop(tile.node, &self.tents[tent_type],
+                    (0.5, 0.3), model.ground_height, &mut scene.world);
+                scene.entities.push(tent_entity);
+                let fire_type = rng.gen_range(0, self.camp_fires.len());
+                let fire_entity = self.make_prop(tile.node, &self.camp_fires[fire_type],
+                    (0.5, 0.7), model.ground_height, &mut scene.world);
+                scene.entities.push(fire_entity);
+                debug!("Generated tent type {} with fire type {} on tile ({}, {})",
+                    tent_type, fire_type, x, y);
                 has_tent = true;
             }
             // plants
@@ -398,8 +403,7 @@ impl<R: gfx::Resources> Gen<R> {
                 let spot_id = rng.gen_range(0, spots.len());
                 let position = spots.swap_remove(spot_id);
                 let entity = self.make_prop(tile.node, &self.plants[plant_type],
-                    position, 0.2, cgmath::Point3::new(3.0, 6.0, -3.0),
-                    &mut scene.world);
+                    position, model.ground_height, &mut scene.world);
                 scene.entities.push(entity);
             }
         }

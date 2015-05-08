@@ -34,6 +34,8 @@ pub struct Model {
     pub max_grass_plants: u8,
     pub max_river_plants: u8,
     pub tent_chance: f32,
+    pub water_height: f32,
+    pub ground_height: f32,
 }
 
 #[derive(RustcDecodable)]

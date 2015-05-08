@@ -277,9 +277,9 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 		}
 		if ob.type == 'MESH':
 			if out_mesh != None:
-				(_, face_num) = save_mesh(out_mesh, ob, log)
+				(_, bounds, face_num) = save_mesh(out_mesh, ob, log)
 			else:
-				(_, face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
+				(_, bounds, face_num) = collect_attributes(ob.data, None, ob.vertex_groups, True, log)
 			if ob.data.materials == []:
 				log.log(1, 'w', 'No materials detected')
 			has_arm = ob.parent and ob.parent.type == 'ARMATURE'
@@ -287,6 +287,7 @@ def save_scene(filepath, context, export_meshes, export_actions, precision):
 				'node'		: ob.name,
 				'mesh'		: '%s@%s' % (ob.data.name, collection_mesh),
 				'armature'	: ob.parent.data.name if has_arm else '',
+				'bounds'	: bounds,
 				'fragments' : [],
 				'actions'	: [],
 			}

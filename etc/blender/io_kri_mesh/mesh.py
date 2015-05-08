@@ -108,14 +108,14 @@ class Attribute:
 		self.interpolate = True
 
 class Mesh:
-	__slots__ = 'nv','ni','attribs','index'
+	__slots__ = 'nv', 'ni', 'attribs', 'index'
 	def __init__(self):
 		self.nv = self.ni = 0
 		self.attribs = []
 		self.index = None
 
 
-def save_mesh(out, ob, log):
+def save_mesh(out, ob, log): # -> (Mesh, bounds, faces_per_mat)
 	# ready...
 	print("\t", 'Exporting Mesh', ob.data.name)
 	log.logu(0, 'Mesh %s' % (ob.data.name))
@@ -123,9 +123,9 @@ def save_mesh(out, ob, log):
 	if ob.parent and ob.parent.type == 'ARMATURE':
 		arm = ob.parent.data
 	# steady...
-	(km, face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
+	(km, bounds, face_num) = collect_attributes(ob.data, arm, ob.vertex_groups, False, log)
 	if km == None:
-		return (None, [])
+		return (None, None, [])
 	# go!
 	out.begin('mesh')
 	totalFm = ''.join(a.type for a in km.attribs)
@@ -170,7 +170,7 @@ def save_mesh(out, ob, log):
 		out.end()
 	# done
 	out.end()	#mesh
-	return (km, face_num)
+	return (km, bounds, face_num)
 
 def compute_bounds_2d(vectors):
 	x, y = zip(*vectors)
@@ -178,12 +178,21 @@ def compute_bounds_2d(vectors):
 	vmax = (max(x), max(y))
 	return (vmin, vmax)
 
+def compute_bounds_3d(vectors):
+	x, y, z = zip(*vectors)
+	vmin = (min(x), min(y), min(z))
+	vmax = (max(x), max(y), max(z))
+	return (vmin, vmax)
+
 def collect_attributes(mesh, armature, groups, no_output,log):
+	# 0: compute bounds
+	bounds = compute_bounds_3d(tuple(v.co) for v in mesh.vertices)
+
 	# 1: convert Mesh to Triangle Mesh
 	for layer in mesh.uv_textures:
 		if not len(layer.data):
 			log.log(1,'e','UV layer is locked by the user')
-			return (None, [])
+			return (None, bounds, [])
 	hasUv		= len(mesh.uv_textures)>0
 	hasTangent	= Settings.putTangent and hasUv
 	hasQuatUv	= Settings.putQuat and hasUv
@@ -211,7 +220,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 			log.log(1, 'w', '%d pure faces detected' % (n_bad_face))
 	if not len(ar_face):
 		log.log(1, 'e', 'object has no faces')
-		return (None, [])
+		return (None, bounds, [])
 
 	# 1.5: face indices
 	ar_face.sort(key = lambda x: x.mat)
@@ -220,7 +229,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		face_num[face.mat] += 1
 
 	if no_output:
-		return (None, face_num)
+		return (None, bounds, face_num)
 
 	# 2: fill sparsed vertex array
 	avg,set_vert,set_surf = 0.0,{},{}
@@ -243,7 +252,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 			set_surf[vs].append(v)
 	log.log(1,'i', '%.2f avg handness' % (avg / len(ar_face)))
 
-	# 3a: compute tangents
+	# 3: compute tangents
 	avg,bad_vert = 0.0,0
 	for vgrup in set_surf.values():
 		tan,lensum = mathutils.Vector((0,0,0)),0.0
@@ -280,7 +289,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 	del bad_vert
 	del avg
 
-	# 3b: update triangle indexes
+	# 4: update triangle indexes
 	ar_vert = []
 	for i,vgrup in enumerate(set_vert.values()):
 		v = vgrup[0]
@@ -291,7 +300,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		ar_vert.append(v)
 	del set_vert
 
-	# 4: unlock quaternions to make all the faces QI-friendly
+	# 5: unlock quaternions to make all the faces QI-friendly
 	def qi_check(f):	# check Quaternion Interpolation friendliness
 		qx = tuple( ar_vert[x].quat for x in f.vi )
 		assert qx[0].dot(qx[1]) >= 0 and qx[0].dot(qx[2]) >= 0
@@ -369,7 +378,7 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 		for f in ar_face: qi_check(f)
 	del ex_face
 
-	# 5: stats and output
+	# 6: stats and output
 	log.logu(1, 'total: %d vertices, %d faces' % (len(ar_vert),len(ar_face)))
 	avg_vu = 3.0 * len(ar_face) / len(ar_vert)
 	log.log(1,'i', '%.2f avg vertex usage' % (avg_vu))
@@ -491,4 +500,4 @@ def collect_attributes(mesh, armature, groups, no_output,log):
 
 	# 9: the end!
 	km.nv = len(ar_vert)
-	return (km, face_num)
+	return (km, bounds, face_num)

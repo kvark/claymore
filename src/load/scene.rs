@@ -16,7 +16,7 @@ pub enum Error {
 
 pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
                  this: &mut cs::Scene<R, Scalar>, global_parent: cs::Parent<Scalar>,
-                 raw: json::Scene, context: &mut super::Context<R, F>)
+                 raw: json::Scene, context: &mut super::Context<'a, R, F>)
                  -> Result<(), Error>
 {
     use std::collections::hash_map::{HashMap, Entry};
@@ -85,15 +85,17 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             Ok(success) => success,
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };
-        let bound_min = cgmath::Point3::new(-100.0, -100.0, -100.0);
-        let bound_max = cgmath::Point3::new(1000.0, 1000.0, 1000.0);
+        let (vmin, vmax) = ent.bounds;
         let mut entity = gfx_scene::Entity {
             name: ent.node.clone(),
             visible: true,
             mesh: mesh,
             node: node,
             skeleton: None, //TODO
-            bound: cgmath::Aabb3::new(bound_min, bound_max), //TODO
+            bound: cgmath::Aabb3::new(
+                cgmath::Point3::new(vmin.0, vmin.1, vmin.2),
+                cgmath::Point3::new(vmax.0, vmax.1, vmax.2),
+            ),
             fragments: Vec::new(),
         };
         for frag in ent.fragments.into_iter() {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 pub type Scalar = f32;
+pub type Vector3 = (Scalar, Scalar, Scalar);
 
 #[derive(RustcDecodable)]
 pub struct Scene {
@@ -37,6 +38,7 @@ pub struct Entity {
     pub node: String,
     pub mesh: String,
     pub armature: String,
+    pub bounds: (Vector3, Vector3),
     pub fragments: Vec<Fragment>,
     pub actions: Vec<Action>,
 }
@@ -87,8 +89,8 @@ pub struct Texture {
     pub image: Image,
     pub filter: u8,
     pub wrap: (i8, i8, i8),
-    pub offset: (Scalar, Scalar, Scalar),
-    pub scale: (Scalar, Scalar, Scalar),
+    pub offset: Vector3,
+    pub scale: Vector3,
 }
 
 #[derive(RustcDecodable)]

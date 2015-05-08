@@ -11,12 +11,14 @@
 		"scene": "data/nature",
 		"size": "3",
 		"model": {
-			"grid_size": [20, 20],
+			"grid_size": [1, 1],
 			"water_plant_chance": 0.2,
 			"plant_chance": 0.3,
 			"max_grass_plants": 5,
 			"max_river_plants": 2,
-			"tent_chance": 0.2
+			"tent_chance": 0.05,
+			"water_height": 0.15,
+			"ground_height": 0.25
 		},
 		"tiles": [
 			{
