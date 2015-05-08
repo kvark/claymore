@@ -11,7 +11,7 @@
 		"scene": "data/nature",
 		"size": "3",
 		"model": {
-			"grid_size": [1, 1],
+			"grid_size": [10, 10],
 			"water_plant_chance": 0.2,
 			"plant_chance": 0.3,
 			"max_grass_plants": 5,
@@ -20,32 +20,14 @@
 			"water_height": 0.15,
 			"ground_height": 0.25
 		},
-		"tiles": [
-			{
-				"name": "Mesh1 Plate_Grass Model",
-				"river": ""
-			},
-			{
-				"name": "Mesh1 Plate_Grass_Dirt Model",
-				"river": ""
-			},
-			{
-				"name": "Mesh1 Plate_River Model",
-				"river": "ns"
-			},
-			{
-				"name": "Mesh1 Plate_River_Corner Model",
-				"river": "nw"
-			},
-			{
-				"name": "Mesh1 Plate_River_Corner_Dirt Model",
-				"river": "nw"
-			},
-			{
-				"name": "Mesh1 Plate_River_Dirt Model",
-				"river": "ns"
-			}
-		],
+		"tiles": {
+			"Mesh1 Plate_Grass Model": "",
+			"Mesh1 Plate_Grass_Dirt Model": "",
+			"Mesh1 Plate_River Model": "ns",
+			"Mesh1 Plate_River_Corner Model": "nw",
+			"Mesh1 Plate_River_Corner_Dirt Model": "nw",
+			"Mesh1 Plate_River_Dirt Model": "ns"
+		},
 		"water_plants": [
 			"Mesh1 Water_lily Model"
 		],

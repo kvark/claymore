@@ -20,24 +20,34 @@ const ALL_DIRECTIONS: &'static [Direction] = &[
     Direction::South, Direction::West
 ];
 
+impl Direction {
+    pub fn from_char(c: char) -> Result<Direction, char> {
+        Ok(match c {
+            'n' => Direction::North,
+            'e' => Direction::East,
+            's' => Direction::South,
+            'w' => Direction::West,
+            _   => return Err(c)
+        })
+    }
+
+    pub fn to_vector(&self) -> [i32; 2] {
+        [[0, 1], [1, 0], [0,-1], [-1, 0]][*self as usize]
+    }
+}
+
 #[derive(Clone, Copy, PartialEq)]
 struct DirectionSet(u8);
 
 const SET_EMPTY: DirectionSet = DirectionSet(0);
 
-impl Direction {
-    pub fn from_char(c: char) -> Direction {
-        match c {
-            'n' => Direction::North,
-            'e' => Direction::East,
-            's' => Direction::South,
-            'w' => Direction::West,
-            _   => panic!("Unknown direction: {}", c),
+impl DirectionSet {
+    pub fn from_str(s: &str) -> Result<DirectionSet, char> {
+        let mut set = SET_EMPTY;
+        for c in s.chars() {
+            set = set | try!(Direction::from_char(c));
         }
-    }
-
-    pub fn to_vector(&self) -> [i32; 2] {
-        [[0, 1], [1, 0], [0,-1], [-1, 0]][*self as usize]
+        Ok(set)
     }
 }
 
@@ -121,8 +131,8 @@ pub struct Gen<R: gfx::Resources> {
 impl<R: gfx::Resources> Gen<R> {
     pub fn new(config: &reflect::Palette, scene: &claymore_scene::Scene<R, f32>) -> Gen<R> {
         println!("Processing data...");
-        let protos: Vec<_> = config.tiles.iter().map(|t| {
-            let mask = t.river.chars().fold(0, |m, c| match c {
+        let protos: Vec<_> = config.tiles.iter().map(|(name, river)| {
+            let mask = river.chars().fold(0, |m, c| match c {
                 'n' => m | 1,
                 'e' => m | 2,
                 's' => m | 4,
@@ -130,10 +140,9 @@ impl<R: gfx::Resources> Gen<R> {
                 _   => panic!("Unknown river direction: {}", c),
             });
             let ent = scene.entities.iter()
-                                    .find(|ent| ent.name == t.name)
-                                    .expect(&format!("Unable to find entity {}", t.name));
-            info!("Found tile {} with river mask {}",
-                t.name, mask);
+                                    .find(|ent| &ent.name == name)
+                                    .expect(&format!("Unable to find entity {}", name));
+            info!("Found tile {} with river mask {}", name, mask);
             TileProto {
                 drawable: Drawable::new(ent),
                 river_mask: mask,
@@ -191,26 +200,32 @@ impl<R: gfx::Resources> Gen<R> {
 
     fn get_grass_spots(&self, river_mask: u8, has_tent: bool)
                        -> Vec<(f32, f32)> {
+        if has_tent {
+            return Vec::new()
+        }
+        let low = 0.15;
+        let mid = 0.5;
+        let hai = 0.85;
         let mut spots = vec![
-            (0.1, 0.1),
-            (0.9, 0.1),
-            (0.1, 0.9),
-            (0.9, 0.9),
+            (low, low),
+            (hai, low),
+            (low, hai),
+            (hai, hai),
         ];
-        if river_mask == 0 && !has_tent {
-            spots.push((0.5, 0.5));
+        if river_mask == 0 {
+            spots.push((mid, mid));
         }
         if river_mask & 1 == 0 {
-            spots.push((0.5, 0.9));
+            spots.push((mid, hai));
         }
         if river_mask & 2 == 0 {
-            spots.push((0.9, 0.5));
+            spots.push((hai, mid));
         }
         if river_mask & 4 == 0 {
-            spots.push((0.5, 0.1));
+            spots.push((mid, low));
         }
         if river_mask & 8 == 0 {
-            spots.push((0.1, 0.5));
+            spots.push((low, mid));
         }
         spots
     }
@@ -258,17 +273,18 @@ impl<R: gfx::Resources> Gen<R> {
                  drawable: &Drawable<R>, position: (f32, f32), z: f32,
                  world: &mut claymore_scene::World<f32>)
                  -> claymore_scene::Entity<R, f32> {
-        use cgmath::{Aabb, Transform};
+        use cgmath::{Aabb, Point, Rotation, Transform};
         let rotation = world.get_node(drawable.node)
                             .local.rot.clone();
-        let center = drawable.bound.center();
-        let offset = cgmath::Vector3::new(
-            position.0 * self.tile_size - center.x,
+        let mut bound_center = rotation.rotate_point(&drawable.bound.center());
+        bound_center.z = 0.0;
+        let offset = cgmath::Point3::new(
+            position.0 * self.tile_size,
             z,
-            -position.1 * self.tile_size - center.z,
+            -position.1 * self.tile_size,
         );
         let translation = world.get_node(base_node)
-                               .local.transform_as_point(&offset);
+                               .local.transform_point(&offset);
         debug!("Found spot {:?}, ended up at pos {:?}", position, translation);
         let node = world.add_node(
             String::new(),
@@ -276,7 +292,7 @@ impl<R: gfx::Resources> Gen<R> {
             cgmath::Decomposed {
                 scale: 1.0,
                 rot: rotation,
-                disp: translation,
+                disp: translation.sub_p(&bound_center),
             });
         claymore_scene::base::Entity {
             name: String::new(),
@@ -376,11 +392,11 @@ impl<R: gfx::Resources> Gen<R> {
             if river_mask == 0 && rng.next_f32() < model.tent_chance {
                 let tent_type = rng.gen_range(0, self.tents.len());
                 let tent_entity = self.make_prop(tile.node, &self.tents[tent_type],
-                    (0.5, 0.3), model.ground_height, &mut scene.world);
+                    (0.5, 0.5), model.ground_height, &mut scene.world);
                 scene.entities.push(tent_entity);
                 let fire_type = rng.gen_range(0, self.camp_fires.len());
                 let fire_entity = self.make_prop(tile.node, &self.camp_fires[fire_type],
-                    (0.5, 0.7), model.ground_height, &mut scene.world);
+                    (0.5, 1.1), model.ground_height, &mut scene.world);
                 scene.entities.push(fire_entity);
                 debug!("Generated tent type {} with fire type {} on tile ({}, {})",
                     tent_type, fire_type, x, y);

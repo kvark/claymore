@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(RustcDecodable)]
 pub struct Demo {
     pub name: String,
@@ -19,7 +21,7 @@ pub struct Palette {
     pub scene: String,
     pub size: f32,
     pub model: Model,
-    pub tiles: Vec<Tile>,
+    pub tiles: HashMap<String, String>,
     pub water_plants: Vec<String>,
     pub plants: Vec<String>,
     pub tents: Vec<String>,
@@ -36,10 +38,4 @@ pub struct Model {
     pub tent_chance: f32,
     pub water_height: f32,
     pub ground_height: f32,
-}
-
-#[derive(RustcDecodable)]
-pub struct Tile {
-    pub name: String,
-    pub river: String,
 }
