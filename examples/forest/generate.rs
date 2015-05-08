@@ -6,7 +6,7 @@ use claymore_scene;
 use reflect;
 
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(u8)]
 enum Direction {
     North,
@@ -31,15 +31,31 @@ impl Direction {
         })
     }
 
-    pub fn to_vector(&self) -> [i32; 2] {
-        [[0, 1], [1, 0], [0,-1], [-1, 0]][*self as usize]
+    pub fn to_vector(self) -> [i32; 2] {
+        [[0, 1], [1, 0], [0,-1], [-1, 0]][self as usize]
+    }
+
+    pub fn to_degrees(self) -> f32 {
+        (self as u8) as f32 * 90.0
+    }
+
+    pub fn aligned_as(self, das: Direction, dto: Direction) -> Direction {
+        match ((self as u8) + 4 + (das as u8) - (dto as u8)) & 3 {
+            0 => Direction::North,
+            1 => Direction::East,
+            2 => Direction::South,
+            3 => Direction::West,
+            _ => panic!("bad direction")
+        }
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct DirectionSet(u8);
 
-const SET_EMPTY: DirectionSet = DirectionSet(0);
+const SET_EMPTY     : DirectionSet = DirectionSet(0);
+const SET_VERTICAL  : DirectionSet = DirectionSet(5);
+const SET_HORISONTAL: DirectionSet = DirectionSet(12);
 
 impl DirectionSet {
     pub fn from_str(s: &str) -> Result<DirectionSet, char> {
@@ -48,6 +64,10 @@ impl DirectionSet {
             set = set | try!(Direction::from_char(c));
         }
         Ok(set)
+    }
+
+    pub fn has(&self, d: Direction) -> bool {
+        self.0 & (1 << (d as u8)) != 0
     }
 }
 
@@ -96,25 +116,20 @@ impl<R: gfx::Resources> Drawable<R> {
 
 struct TileProto<R: gfx::Resources> {
     drawable: Drawable<R>,
-    river_mask: u8,
+    river_mask: DirectionSet,
 }
 
 impl<R: gfx::Resources> TileProto<R> {
-    pub fn fit_orientation(&self, neighbors: u8, rivers: u8) -> Option<u8> {
-        let mut mask = self.river_mask;
-        for i in 0u8.. 4 {
-            if (mask & neighbors) == rivers {
-                return Some(i)
-            }
-            mask = ((mask << 1) & 0xF) | (mask >> 3);
-        }
-        None
+    pub fn fit_orientation(&self, neighbors: DirectionSet, rivers: DirectionSet)
+                           -> Option<Direction> {
+        ALL_DIRECTIONS.iter().find(|dir| (self.river_mask >> **dir) & neighbors == rivers)
+                             .map(|dir| *dir)
     }
 }
 
 struct Tile {
     proto_id: usize,
-    orientation: u8,
+    orientation: Direction,
     node: claymore_scene::NodeId<f32>,
 }
 
@@ -132,20 +147,13 @@ impl<R: gfx::Resources> Gen<R> {
     pub fn new(config: &reflect::Palette, scene: &claymore_scene::Scene<R, f32>) -> Gen<R> {
         println!("Processing data...");
         let protos: Vec<_> = config.tiles.iter().map(|(name, river)| {
-            let mask = river.chars().fold(0, |m, c| match c {
-                'n' => m | 1,
-                'e' => m | 2,
-                's' => m | 4,
-                'w' => m | 8,
-                _   => panic!("Unknown river direction: {}", c),
-            });
             let ent = scene.entities.iter()
                                     .find(|ent| &ent.name == name)
                                     .expect(&format!("Unable to find entity {}", name));
-            info!("Found tile {} with river mask {}", name, mask);
+            info!("Found tile {} with river mask {}", name, river);
             TileProto {
                 drawable: Drawable::new(ent),
-                river_mask: mask,
+                river_mask: DirectionSet::from_str(river).unwrap(),
             }
         }).collect();
         let water_plants = config.water_plants.iter().map(|name| Drawable::new(
@@ -178,27 +186,27 @@ impl<R: gfx::Resources> Gen<R> {
         }
     }
 
-    fn get_water_spots(&self, river_mask: u8) -> Vec<(f32, f32)> {
+    fn get_water_spots(&self, river_mask: DirectionSet) -> Vec<(f32, f32)> {
         let mut spots = Vec::new();
-        if river_mask == 5 || river_mask == 12 {
+        if river_mask == SET_VERTICAL || river_mask == SET_HORISONTAL {
             spots.push((0.5, 0.5))
         }
-        if river_mask & 1 != 0 {
+        if river_mask.has(Direction::North) {
             spots.push((0.5, 0.8));
         }
-        if river_mask & 2 != 0 {
+        if river_mask.has(Direction::East) {
             spots.push((0.8, 0.5));
         }
-        if river_mask & 4 != 0 {
+        if river_mask.has(Direction::South) {
             spots.push((0.5, 0.2));
         }
-        if river_mask & 8 != 0 {
+        if river_mask.has(Direction::West) {
             spots.push((0.2, 0.5));
         }
         spots
     }
 
-    fn get_grass_spots(&self, river_mask: u8, has_tent: bool)
+    fn get_grass_spots(&self, river_mask: DirectionSet, has_tent: bool)
                        -> Vec<(f32, f32)> {
         if has_tent {
             return Vec::new()
@@ -212,40 +220,45 @@ impl<R: gfx::Resources> Gen<R> {
             (low, hai),
             (hai, hai),
         ];
-        if river_mask == 0 {
+        if river_mask == SET_EMPTY {
             spots.push((mid, mid));
         }
-        if river_mask & 1 == 0 {
+        if !river_mask.has(Direction::North) {
             spots.push((mid, hai));
         }
-        if river_mask & 2 == 0 {
+        if !river_mask.has(Direction::East) {
             spots.push((hai, mid));
         }
-        if river_mask & 4 == 0 {
+        if !river_mask.has(Direction::South) {
             spots.push((mid, low));
         }
-        if river_mask & 8 == 0 {
+        if !river_mask.has(Direction::West) {
             spots.push((low, mid));
         }
         spots
     }
 
-    fn make_tile(&self, x: i32, y: i32, proto_id: usize, orientation: u8,
+    fn make_tile(&self, x: i32, y: i32, proto_id: usize, orientation: Direction,
                  world: &mut claymore_scene::World<f32>)
                  -> claymore_scene::Entity<R, f32> {
         use cgmath::ToRad;
         let drawable = &self.proto_tiles[proto_id].drawable;
-        debug!("\tUsing orientation {} and proto id {}", orientation, proto_id);
+        debug!("\tUsing orientation {:?} and proto id {}", orientation, proto_id);
         let rotation = {
             use cgmath::Rotation;
             use claymore_scene::base::World;
             let relative: cgmath::Quaternion<_> = cgmath::Rotation3::from_axis_angle(
                 &cgmath::Vector3::new(0.0, 0.0, -1.0),
-                cgmath::deg(orientation as f32 * 90.0).to_rad(),
+                cgmath::deg(orientation.to_degrees()).to_rad(),
             );
             relative.concat(&world.get_transform(&drawable.node).rot)
         };
-        let (rot_x, rot_y) = [(0, 0), (0, 1), (1, 1), (1, 0)][orientation as usize];
+        let (rot_x, rot_y) = match orientation {
+            Direction::North => (0, 0),
+            Direction::East => (0, 1),
+            Direction::South => (1, 1),
+            Direction::West => (1, 0),
+        };
         let node = world.add_node(
             format!("Tile ({}, {})", x, y),
             claymore_scene::space::Parent::None,
@@ -321,22 +334,22 @@ impl<R: gfx::Resources> Gen<R> {
                 }
                 debug!("Generating tile {:?}", (x,y));
                 // figure out what neighbour edges are rivers
-                let mut river_mask = 0;
-                let mut neighbour_mask = 0;
-                let offsets = [[0, 1], [1, 0], [0,-1], [-1, 0]];
-                for (bit, off) in offsets.iter().enumerate() {
-                    let pos = (x + off[0], y + off[1]);
+                let mut river_mask = SET_EMPTY;
+                let mut neighbour_mask = SET_EMPTY;
+                for dir in ALL_DIRECTIONS {
+                    let offset = dir.to_vector();
+                    let pos = (x + offset[0], y + offset[1]);
                     if let Some(tile) = tile_map.get(&pos) {
-                        neighbour_mask |= 1 << bit;
-                        let river_bit = ((bit as u8) + 6 - tile.orientation) & 3;
-                            debug!("\tChecking for river bit {} of neighbor dir {}", river_bit, bit);
+                        neighbour_mask = neighbour_mask | *dir;
+                        let river_bit = dir.aligned_as(Direction::South, tile.orientation);
+                            debug!("\tChecking for river dir {:?} of neighbor dir {:?}", river_bit, dir);
                         let proto = &self.proto_tiles[tile.proto_id];
-                        if proto.river_mask & (1 << river_bit) != 0 {
-                            river_mask |= 1 << bit;
+                        if proto.river_mask.has(river_bit) {
+                            river_mask = river_mask | *dir;
                         }
                     }
                 }
-                debug!("\tLooking for river mask {} of neighbors {}", river_mask, neighbour_mask);
+                debug!("\tLooking for river mask {:?} of neighbors {:?}", river_mask, neighbour_mask);
                 // find a matching prototype
                 let mut matched = 0;
                 for proto in self.proto_tiles.iter() {
@@ -345,7 +358,7 @@ impl<R: gfx::Resources> Gen<R> {
                     }
                 }
                 if matched == 0 {
-                    error!("Couldn't find a tile match for {:?}, where neighbors = {}, rivers = {}",
+                    error!("Couldn't find a tile match for {:?}, where neighbors = {:?}, rivers = {:?}",
                         (x, y), neighbour_mask, river_mask);
                     continue
                 }
@@ -377,9 +390,9 @@ impl<R: gfx::Resources> Gen<R> {
             use rand::Rng;
             let river_mask = self.proto_tiles[tile.proto_id].river_mask;
             // water plants
-            if river_mask != 0 && rng.next_f32() < model.water_plant_chance {
+            if river_mask != SET_EMPTY && rng.next_f32() < model.water_plant_chance {
                 let plant_type = rng.gen_range(0, self.water_plants.len());
-                debug!("Generating water plant type {} on tile ({}, {}) with mask {}",
+                debug!("Generating water plant type {} on tile ({}, {}) with mask {:?}",
                     plant_type, x, y, river_mask);
                 let spots = self.get_water_spots(river_mask);
                 let position = spots[rng.gen_range(0, spots.len())];
@@ -389,7 +402,7 @@ impl<R: gfx::Resources> Gen<R> {
             }
             // tents
             let mut has_tent = false;
-            if river_mask == 0 && rng.next_f32() < model.tent_chance {
+            if river_mask == SET_EMPTY && rng.next_f32() < model.tent_chance {
                 let tent_type = rng.gen_range(0, self.tents.len());
                 let tent_entity = self.make_prop(tile.node, &self.tents[tent_type],
                     (0.5, 0.5), model.ground_height, &mut scene.world);
@@ -404,7 +417,7 @@ impl<R: gfx::Resources> Gen<R> {
             }
             // plants
             let mut spots = self.get_grass_spots(river_mask, has_tent);
-            let max_plants = if river_mask != 0 || has_tent {
+            let max_plants = if river_mask != SET_EMPTY || has_tent {
                 model.max_river_plants
             } else {
                 model.max_grass_plants
@@ -414,7 +427,7 @@ impl<R: gfx::Resources> Gen<R> {
                     continue
                 }
                 let plant_type = rng.gen_range(0, self.plants.len());
-                debug!("Generating plant type {} on tile ({}, {}) with mask {}",
+                debug!("Generating plant type {} on tile ({}, {}) with mask {:?}",
                     plant_type, x, y, river_mask);
                 let spot_id = rng.gen_range(0, spots.len());
                 let position = spots.swap_remove(spot_id);
