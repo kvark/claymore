@@ -120,10 +120,9 @@ struct TileProto<R: gfx::Resources> {
 }
 
 impl<R: gfx::Resources> TileProto<R> {
-    pub fn fit_orientation(&self, neighbors: DirectionSet, rivers: DirectionSet)
-                           -> Option<Direction> {
-        ALL_DIRECTIONS.iter().find(|dir| (self.river_mask >> **dir) & neighbors == rivers)
-                             .map(|dir| *dir)
+    pub fn fit_orientation(&self, dir: Direction, neighbors: DirectionSet,
+                           rivers: DirectionSet) -> bool {
+        (self.river_mask >> dir) & neighbors == rivers
     }
 }
 
@@ -353,8 +352,10 @@ impl<R: gfx::Resources> Gen<R> {
                 // find a matching prototype
                 let mut matched = 0;
                 for proto in self.proto_tiles.iter() {
-                    if proto.fit_orientation(neighbour_mask, river_mask).is_some() {
-                        matched += 1;
+                    for dir in ALL_DIRECTIONS {
+                        if proto.fit_orientation(*dir, neighbour_mask, river_mask) {
+                            matched += 1;
+                        }
                     }
                 }
                 if matched == 0 {
@@ -365,22 +366,23 @@ impl<R: gfx::Resources> Gen<R> {
                 let chosen = rng.gen_range(0, matched);
                 debug!("\tChosen match {} of total {}", chosen, matched);
                 matched = 0;
-                for (id, proto) in self.proto_tiles.iter().enumerate() {
-                    match proto.fit_orientation(neighbour_mask, river_mask) {
-                        Some(orientation) if matched == chosen => {
-                            let entity = self.make_tile(x, y, id, orientation, &mut scene.world);
-                            tile_map.insert((x, y), Tile {
-                                proto_id: id,
-                                orientation: orientation,
-                                node: entity.node.clone(),
-                            });
-                            scene.entities.push(entity);
-                            break;
+                'proto: for (id, proto) in self.proto_tiles.iter().enumerate() {
+                    for dir in ALL_DIRECTIONS {
+                        if !proto.fit_orientation(*dir, neighbour_mask, river_mask) {
+                            continue;
                         }
-                        Some(_) => {
+                        if matched < chosen {
                             matched += 1;
+                            continue
                         }
-                        None => (),
+                        let entity = self.make_tile(x, y, id, *dir, &mut scene.world);
+                        tile_map.insert((x, y), Tile {
+                            proto_id: id,
+                            orientation: *dir,
+                            node: entity.node.clone(),
+                        });
+                        scene.entities.push(entity);
+                        break 'proto;
                     }
                 }
             }
