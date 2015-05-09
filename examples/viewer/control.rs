@@ -79,7 +79,7 @@ impl Control {
         }
     }
 
-    pub fn wheel(&mut self, shift: i32, transform: &mut Transform<f32>) {
+    pub fn wheel(&mut self, shift: f64, transform: &mut Transform<f32>) {
         use cgmath::{Vector, Transform};
         let vector = transform.transform_vector(&cgmath::vec3(0.0, 0.0, 1.0));
         transform.disp.add_self_v(&vector.mul_s(shift as f32 * -self.zoom_speed));

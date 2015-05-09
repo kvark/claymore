@@ -174,6 +174,7 @@ fn main() {
             let color = [color.0, color.1, color.2, color.3];
             let strings = [
                 format!("frame time = {} ms", avg_time / 1000000),
+                format!("primitives = {}", report.primitives_rendered),
                 format!("order = {:?}", order),
                 //format!("ratio = {}",     report.get_ratio()),
                 //format!("invisible = {}", report.calls_invisible),

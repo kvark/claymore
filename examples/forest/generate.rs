@@ -240,7 +240,6 @@ impl<R: gfx::Resources> Gen<R> {
     fn make_tile(&self, x: i32, y: i32, proto_id: usize, orientation: Direction,
                  world: &mut claymore_scene::World<f32>)
                  -> claymore_scene::Entity<R, f32> {
-        use cgmath::ToRad;
         let drawable = &self.proto_tiles[proto_id].drawable;
         debug!("\tUsing orientation {:?} and proto id {}", orientation, proto_id);
         let rotation = {
@@ -248,7 +247,7 @@ impl<R: gfx::Resources> Gen<R> {
             use claymore_scene::base::World;
             let relative: cgmath::Quaternion<_> = cgmath::Rotation3::from_axis_angle(
                 &cgmath::Vector3::new(0.0, 0.0, -1.0),
-                cgmath::deg(orientation.to_degrees()).to_rad(),
+                cgmath::deg(orientation.to_degrees()).into(),
             );
             relative.concat(&world.get_transform(&drawable.node).rot)
         };

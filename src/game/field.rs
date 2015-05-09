@@ -104,12 +104,12 @@ impl<R: gfx::Resources> Field<R> {
     }
 
     pub fn update_params(&mut self, camera: &scene::Camera<f32>, world: &scene::World<f32>) {
-        use cgmath::{Matrix, ToMatrix4, Transform};
+        use cgmath::{Matrix, Transform};
         use scene::base::World;
-        let mx_proj = camera.projection.to_matrix4();
+        let mx_proj: cgmath::Matrix4<f32> = camera.projection.clone().into();
         let model_view = world.get_transform(&camera.node).invert().unwrap()
                               .concat(&world.get_transform(&self.node));
-        self.batch.param.mvp = mx_proj.mul_m(&model_view.to_matrix4()).into_fixed();
+        self.batch.param.mvp = mx_proj.mul_m(&model_view.into()).into_fixed();
     }
 
     pub fn draw<S: gfx::Stream<R>>(&self, stream: &mut S) {

@@ -34,8 +34,8 @@ pub type TextureError = String;
 
 pub struct Cache<R: gfx::Resources> {
     meshes: HashMap<String, mesh::Success<R>>,
-    textures: HashMap<String, Result<gfx::TextureHandle<R>, TextureError>>,
-    programs: HashMap<String, Result<gfx::ProgramHandle<R>, program::Error>>,
+    textures: HashMap<String, Result<gfx::handle::Texture<R>, TextureError>>,
+    programs: HashMap<String, Result<gfx::handle::Program<R>, program::Error>>,
 }
 
 impl<R: gfx::Resources> Cache<R> {
@@ -112,7 +112,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
     }
 
     pub fn request_texture(&mut self, path_str: &str, srgb: bool)
-                           -> Result<gfx::TextureHandle<R>, TextureError> {
+                           -> Result<gfx::handle::Texture<R>, TextureError> {
         match self.cache.textures.entry(path_str.to_string()) {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {
@@ -139,7 +139,7 @@ impl<'a, R: gfx::Resources, F: gfx::Factory<R>> Context<'a, R, F> {
     }
 
     pub fn request_program(&mut self, name: &str)
-                           -> Result<gfx::ProgramHandle<R>, program::Error> {
+                           -> Result<gfx::handle::Program<R>, program::Error> {
         match self.cache.programs.entry(name.to_string()) {
             Entry::Occupied(v) => v.get().clone(),
             Entry::Vacant(v) => {

@@ -80,7 +80,7 @@ impl<R: gfx::Resources> App<R> {
                 match config.characters.get(name) {
                     Some(desc) => {
                         use grid::Grid2;
-                        use cgmath::{Point, ToRad};
+                        use cgmath::Point;
                         context.alpha_test = Some(desc.alpha_test);
                         let nid = context.extend_scene(&mut scene, &desc.scene).unwrap();
                         let node = scene.world.mut_node(nid);
@@ -89,7 +89,7 @@ impl<R: gfx::Resources> App<R> {
                         node.local = cgmath::Decomposed {
                             rot: cgmath::Rotation3::from_axis_angle(
                                 &cgmath::Vector3::new(0.0, 0.0, -1.0),
-                                cgmath::deg(angle * 180.0).to_rad()
+                                cgmath::deg(angle * 180.0).into()
                             ),
                             scale: ch.scale,
                             disp: field.get_center(coord).to_vec(),
@@ -122,12 +122,13 @@ impl<R: gfx::Resources> App<R> {
     }
 
     fn mouse_cast(&self, x: f32, y: f32) -> field::Coordinate {
-        use cgmath::{EuclideanVector, Matrix, Point, ToMatrix4, Transform};
+        use cgmath::{EuclideanVector, Matrix, Point, Transform};
         use scene::base::World;
         let end_proj = cgmath::Point3::new(x*2.0 - 1.0, 1.0 - y*2.0, 0.0);
-        let mx_proj = self.camera.projection.to_matrix4().invert().unwrap();
+        let mx_proj: cgmath::Matrix4<f32> = self.camera.projection.clone().into();
+        let inv_proj = mx_proj.invert().unwrap();
         let end_cam = cgmath::Point3::from_homogeneous(
-            &mx_proj.mul_v(&end_proj.to_homogeneous())
+            &inv_proj.mul_v(&end_proj.to_homogeneous())
         );
         let ray = cgmath::Ray3::new(cgmath::Point3::new(0.0, 0.0, 0.0),
                                     end_cam.to_vec().normalize());
@@ -171,12 +172,12 @@ impl<R: gfx::Resources> App<R> {
     }
 
     pub fn rotate_camera(&mut self, degrees: f32) {
-        use cgmath::{ToRad, Transform};
+        use cgmath::Transform;
         let rotation = cgmath::Decomposed {
             scale: 1.0,
             rot: cgmath::Rotation3::from_axis_angle(
                 &cgmath::vec3(0.0, 0.0, 1.0),
-                cgmath::deg(degrees).to_rad()
+                cgmath::deg(degrees).into()
             ),
             disp: cgmath::zero(),
         };

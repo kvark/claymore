@@ -12,7 +12,7 @@ mod control;
 
 fn main() {
     use std::env;
-    use cgmath::{vec3, FixedArray, Matrix, ToMatrix4, Transform};
+    use cgmath::{vec3, FixedArray, Matrix, Transform};
     use gfx::traits::*;
     use gfx_pipeline::Pipeline;
 
@@ -79,7 +79,7 @@ fn main() {
                     control.move_release(),
                 Event::MouseMoved(coords) =>
                     control.position(coords, &mut scene.world.mut_node(camera.node).local),
-                Event::MouseWheel(shift) =>
+                Event::MouseWheel(_, shift) =>
                     control.wheel(shift, &mut scene.world.mut_node(camera.node).local),
                 _ => {},
             }
@@ -107,7 +107,8 @@ fn main() {
             use cgmath::FixedArray;
             use claymore_scene::base::World;
             let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
-            let proj_mx = camera.projection.to_matrix4().mul_m(&cam_inv.to_matrix4()).into_fixed();
+            let temp: cgmath::Matrix4<f32> = camera.projection.clone().into();
+            let proj_mx = temp.mul_m(&cam_inv.into()).into_fixed();
             debug_renderer.render_canvas(&mut canvas, proj_mx);
         }
 

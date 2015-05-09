@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 pub fn load<R: gfx::Resources, F: gfx::Factory<R>>(name: &str, factory: &mut F)
-            -> Result<gfx::ProgramHandle<R>, Error> {
+            -> Result<gfx::handle::Program<R>, Error> {
     use std::io::Read;
     // vertex
     let mut src_vert = Vec::new();
