@@ -72,7 +72,7 @@ impl<R: io::Read> Root<R> {
     pub fn enter<'b>(&'b mut self) -> Chunk<'b, R> {
         let name = {
             let raw = self.read_bytes(NAME_LENGTH);
-            let buf = match raw.position_elem(&0) {
+            let buf = match raw.iter().position(|b| *b == 0) {
                 Some(p) => &raw[..p],
                 None => raw,
             };

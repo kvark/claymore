@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/kvark/claymore.png?branch=master)](https://travis-ci.org/kvark/claymore)
 Claymore
 ============
 

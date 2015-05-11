@@ -1,12 +1,7 @@
-#![feature(custom_attribute, plugin)]
-#![plugin(gfx_macros)]
-
 #[macro_use]
 extern crate log;
 extern crate id;
 extern crate cgmath;
-extern crate gfx;
-extern crate gfx_phase;
 extern crate gfx_scene;
 extern crate gfx_pipeline;
 

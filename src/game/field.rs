@@ -6,18 +6,14 @@ use grid;
 use grid::Grid;
 use scene;
 
-#[shader_param]
-struct Param<R: gfx::Resources> {
-    mvp: [[f32; 4]; 4],
-    color: [f32; 4],
-    _dummy: PhantomData<R>,
-}
+gfx_parameters!( Param/Link {
+    u_Transform@ mvp: [[f32; 4]; 4],
+    u_Color@ color: [f32; 4],
+});
 
-#[vertex_format]
-#[derive(Clone, Copy)]
-struct Vertex {
-    position: [f32; 2],
-}
+gfx_vertex!( Vertex {
+    a_Position@ position: [f32; 2],
+});
 
 impl Vertex {
     pub fn new(x: f32, y: f32) -> Vertex {
@@ -30,23 +26,22 @@ impl Vertex {
 static VERTEX_SRC: &'static [u8] = b"
     #version 150 core
 
-    uniform mat4 mvp;
-    in vec2 position;
+    uniform mat4 u_Transform;
+    in vec2 a_Position;
 
     void main() {
-        gl_Position = mvp * vec4(position, 0.0, 1.0);
-        gl_PointSize = 2.0;
+        gl_Position = u_Transform * vec4(a_Position, 0.0, 1.0);
     }
 ";
 
 static FRAGMENT_SRC: &'static [u8] = b"
     #version 150 core
 
-    uniform vec4 color;
+    uniform vec4 u_Color;
     out vec4 o_Color;
 
     void main() {
-        o_Color = color;
+        o_Color = u_Color;
     }
 ";
 
@@ -76,7 +71,7 @@ impl<R: gfx::Resources> Field<R> {
         let mut batch = gfx::batch::OwnedBatch::new(mesh, program, Param {
             mvp: [[0.0; 4]; 4],
             color: [color.0, color.1, color.2, color.3],
-            _dummy: PhantomData,
+            _r: PhantomData,
         }).unwrap();
         batch.state = batch.state.depth(gfx::state::Comparison::LessEqual, false);
         batch.slice.prim_type = gfx::PrimitiveType::Line;
