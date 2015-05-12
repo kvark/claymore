@@ -1,6 +1,10 @@
 {
 	"name": "Forest Generator",
 	"generate": true,
+	"control": {
+		"move_speed": 1.0,
+		"rotate_speed": 1.0
+	},
 	"debug": {
 		"offset": [-150, 10],
 		"line_jump": 20,
@@ -11,7 +15,7 @@
 		"scene": "data/nature",
 		"size": "3",
 		"model": {
-			"grid_size": [10, 10],
+			"grid_size": [20, 20],
 			"water_plant_chance": 0.2,
 			"plant_chance": 0.3,
 			"max_grass_plants": 5,

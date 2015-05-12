@@ -28,22 +28,68 @@ enum Order {
     Unordered,
 }
 
+impl Order {
+    pub fn next<R: gfx::Resources>(&mut self) -> Option<gfx_pipeline::forward::OrderFun<R>> {
+        let (fun, order): (Option<gfx_pipeline::forward::OrderFun<R>>, Order) = match *self {
+            Order::Default => (Some(gfx_phase::sort::front_to_back), Order::FrontToBack),
+            Order::FrontToBack => (Some(gfx_phase::sort::back_to_front), Order::BackToFront),
+            Order::BackToFront => (Some(gfx_phase::sort::program), Order::Material),
+            Order::Material => (Some(gfx_phase::sort::mesh), Order::Mesh),
+            Order::Mesh => (None, Order::Unordered),
+            Order::Unordered => (Some(gfx_pipeline::forward::order), Order::Default),
+        };
+        *self = order;
+        fun
+    }
+}
 
 fn move_camera<S: cgmath::BaseFloat>(
     camera: &claymore_scene::Camera<S>,
     vec: &cgmath::Vector3<S>,
     world: &mut claymore_scene::World<S>
 ){
-    use cgmath::{Transform, Vector, zero};
+    use cgmath::{EuclideanVector, Transform, Vector};
     let node = world.mut_node(camera.node);
     let mut cam_offset = node.local.transform_vector(vec);
-    if vec.z != zero() {
-        cam_offset.x = zero();
-        cam_offset.y = zero();
+    let len = cam_offset.length();
+    if vec.z != cgmath::zero() {
+        cam_offset.x = cgmath::zero();
+        cam_offset.y = cgmath::zero();
     }else {
-        cam_offset.z = zero();
-    }
-    node.local.disp.add_self_v(&cam_offset);
+        cam_offset.z = cgmath::zero();
+    };
+    let rescale = len / cam_offset.length();
+    node.local.disp.add_self_v(&cam_offset.mul_s(rescale));
+}
+
+fn rotate_camera<S: cgmath::BaseFloat>(
+    camera: &claymore_scene::Camera<S>,
+    amount: S,
+    world: &mut claymore_scene::World<S>
+){
+    use cgmath::{Transform, Vector};
+    let node = world.mut_node(camera.node);
+    let zvec = node.local.transform_vector(&cgmath::Vector3::unit_z());
+    let t = -node.local.disp.z / zvec.z;
+    let anchor = node.local.disp.add_v(&zvec.mul_s(t));
+    let t_rotation = cgmath::Decomposed {
+        scale: cgmath::one(),
+        rot: cgmath::Rotation3::from_axis_angle(
+            &cgmath::Vector3::unit_z(), cgmath::rad(amount)),
+        disp: cgmath::zero(),
+    };
+    let t_offset_inv = cgmath::Decomposed {
+        scale: cgmath::one(),
+        rot: cgmath::Rotation::identity(),
+        disp: -anchor,
+    };
+    let t_offset = cgmath::Decomposed {
+        scale: cgmath::one(),
+        rot: cgmath::Rotation::identity(),
+        disp: anchor,
+    };
+    let relative = t_offset.concat(&t_rotation.concat(&t_offset_inv));
+    node.local = relative.concat(&node.local);
 }
 
 
@@ -108,6 +154,15 @@ fn main() {
 
     println!("Rendering...");
     'main: loop {
+        let delta = clock_ticks::precise_time_ns() - last_moment;
+        avg_time = (avg_time * config.debug.time_factor + delta) /
+            (config.debug.time_factor + 1);
+        last_moment += delta;
+
+        let seconds = (delta/1000000) as f32 / 1000.0;
+        let move_delta = config.control.move_speed * seconds;
+        let rotate_delta = config.control.rotate_speed * seconds;
+
         for event in canvas.output.window.poll_events() {
             // TODO: use the scroll
             use glutin::{Event, VirtualKeyCode};
@@ -117,43 +172,23 @@ fn main() {
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Escape)) =>
                     break 'main,
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::A)) =>
-                    move_camera(&camera, &cgmath::vec3(-1.0, 0.0, 0.0), &mut scene.world),
+                    move_camera(&camera, &cgmath::vec3(-move_delta, 0.0, 0.0), &mut scene.world),
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::D)) =>
-                    move_camera(&camera, &cgmath::vec3(1.0, 0.0, 0.0),  &mut scene.world),
+                    move_camera(&camera, &cgmath::vec3(move_delta, 0.0, 0.0),  &mut scene.world),
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::S)) =>
-                    move_camera(&camera, &cgmath::vec3(0.0, -1.0, 0.0), &mut scene.world),
+                    move_camera(&camera, &cgmath::vec3(0.0, -move_delta, 0.0), &mut scene.world),
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::W)) =>
-                    move_camera(&camera, &cgmath::vec3(0.0, 1.0, 0.0),  &mut scene.world),
-                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::E)) =>
-                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, -1.0), &mut scene.world),
+                    move_camera(&camera, &cgmath::vec3(0.0, move_delta, 0.0),  &mut scene.world),
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::X)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, -move_delta), &mut scene.world),
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Z)) =>
+                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, move_delta),  &mut scene.world),
                 Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Q)) =>
-                    move_camera(&camera, &cgmath::vec3(0.0, 0.0, 1.0),  &mut scene.world),
-                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Tab)) => order = match order {
-                    Order::Default => {
-                        pipeline.phase.sort = Some(gfx_phase::sort::front_to_back);
-                        Order::FrontToBack
-                    },
-                    Order::FrontToBack => {
-                        pipeline.phase.sort = Some(gfx_phase::sort::back_to_front);
-                        Order::BackToFront
-                    },
-                    Order::BackToFront => {
-                        pipeline.phase.sort = Some(gfx_phase::sort::program);
-                        Order::Material
-                    },
-                    Order::Material => {
-                        pipeline.phase.sort = Some(gfx_phase::sort::mesh);
-                        Order::Mesh
-                    },
-                    Order::Mesh => {
-                        pipeline.phase.sort = None;
-                        Order::Unordered
-                    },
-                    Order::Unordered => {
-                        pipeline.phase.sort = Some(gfx_pipeline::forward::order);
-                        Order::Default
-                    },
-                },
+                    rotate_camera(&camera, -rotate_delta, &mut scene.world),
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::E)) =>
+                    rotate_camera(&camera, rotate_delta, &mut scene.world),
+                Event::KeyboardInput(Pressed, _, Some(VirtualKeyCode::Tab)) =>
+                    pipeline.phase.sort = order.next(),
                 _ => {},
             }
         }
@@ -191,11 +226,6 @@ fn main() {
         debug.render_canvas(&mut canvas, [[0.0; 4]; 4]);
 
         canvas.present();
-
-        let moment = clock_ticks::precise_time_ns();
-        avg_time = (avg_time * config.debug.time_factor + moment - last_moment) /
-            (config.debug.time_factor + 1);
-        last_moment = moment;
     }
     println!("Done.");
 }

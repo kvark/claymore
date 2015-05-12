@@ -4,8 +4,15 @@ use std::collections::HashMap;
 pub struct Demo {
     pub name: String,
     pub generate: bool,
+    pub control: Control,
     pub debug: Debug,
     pub palette: Palette,
+}
+
+#[derive(RustcDecodable)]
+pub struct Control {
+    pub move_speed: f32,
+    pub rotate_speed: f32,
 }
 
 #[derive(RustcDecodable)]
