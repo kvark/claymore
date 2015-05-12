@@ -2,7 +2,7 @@
 Claymore
 ============
 
-This is an experimental game project in Rust. It provides Blender-based asset pipeline and scene rendering as separate library sub-crates.
+This is an experimental game project in Rust. It provides Blender-based asset pipeline and scene rendering as separate library sub-crates. It is based on and extends GFX rendering ecosystem.
 
 ## Technology
 - [rust](https://github.com/rust-lang/rust)
@@ -12,13 +12,10 @@ This is an experimental game project in Rust. It provides Blender-based asset pi
 - [gfx_pipeline](https://github.com/kvark/gfx_pipeline)
 - [blender](blender.org)
 
-## Game Controls
+## Controls
 - left mouse click: move character
 - `Q`/`E`: rotate camera
 - `Esc`: exit game
 
-## Viewer Controls
-- left mouse hold and move: rotate camera
-- middle mouse hold and move: move camera
-- scroll: zoom camera
-- `Esc`: exit game
+## Latest screen
+![forest](etc/screens/7-forest.jpg "Forest demo")
