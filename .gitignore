@@ -5,5 +5,4 @@ data/
 target/
 
 # Caches
-/Cargo.lock
 __pycache__
