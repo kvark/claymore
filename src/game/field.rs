@@ -6,7 +6,7 @@ use grid;
 use grid::Grid;
 use scene;
 
-gfx_parameters!( Param/Link {
+gfx_parameters!( Param {
     u_Transform@ mvp: [[f32; 4]; 4],
     u_Color@ color: [f32; 4],
 });

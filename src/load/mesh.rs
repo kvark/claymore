@@ -122,18 +122,18 @@ pub fn load<I: io::Read, R: gfx::Resources, F: gfx::Factory<R>>(
                 slice.kind = match format {
                     'B' => {
                         let data = cbuf.read_bytes(n_ind * 1);
-                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
-                        gfx::SliceKind::Index8(gfx::handle::IndexBuffer::from_raw(buf), 0)
+                        let buf = factory.create_buffer_static(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index8(buf, 0)
                     },
                     'H' => {
                         let data = cbuf.read_bytes(n_ind * 2);
-                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
-                        gfx::SliceKind::Index16(gfx::handle::IndexBuffer::from_raw(buf), 0)
+                        let buf = factory.create_buffer_static(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index16(buf.cast(), 0)
                     },
                     'L' => {
                         let data = cbuf.read_bytes(n_ind * 4);
-                        let buf = factory.create_buffer_static_raw(data, gfx::BufferRole::Index);
-                        gfx::SliceKind::Index32(gfx::handle::IndexBuffer::from_raw(buf), 0)
+                        let buf = factory.create_buffer_static(data, gfx::BufferRole::Index);
+                        gfx::SliceKind::Index32(buf.cast(), 0)
                     },
                     _ => return Err(Error::IndexType(format)),
                 };

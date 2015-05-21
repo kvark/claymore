@@ -4,6 +4,7 @@ extern crate glutin;
 extern crate gfx;
 extern crate gfx_pipeline;
 extern crate gfx_window_glutin;
+extern crate gfx_text;
 extern crate gfx_debug_draw;
 extern crate claymore_load;
 extern crate claymore_scene;
@@ -24,14 +25,15 @@ fn main() {
         .with_vsync()
         .with_gl(glutin::GL_CORE)
         .build().unwrap();
-    let mut canvas = gfx_window_glutin::init(window).into_canvas();
+    let (mut stream, mut device, mut factory) = gfx_window_glutin::init(window);
 
-    let mut debug_renderer = gfx_debug_draw::DebugRenderer::from_canvas(
-        &mut canvas, 64, None, None).ok().unwrap();
+    let text_renderer = gfx_text::new(device.spawn_factory()).unwrap();
+    let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
+        device.spawn_factory(), text_renderer, 64).unwrap();
 
     let mut scene = claymore_load::create_scene();
     {
-        let mut context = claymore_load::Context::new(&mut canvas.factory,
+        let mut context = claymore_load::Context::new(&mut factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string()));
         context.alpha_test = Some(20);
         context.forgive = true;
@@ -42,7 +44,7 @@ fn main() {
     }
 
     println!("Initializing the graphics...");
-    let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut canvas.factory)
+    let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut factory)
                                                        .unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
@@ -63,7 +65,7 @@ fn main() {
 
     println!("Rendering...");
     'main: loop {
-        for event in canvas.output.window.poll_events() {
+        for event in stream.out.window.poll_events() {
             use glutin::{Event, ElementState, MouseButton, VirtualKeyCode};
             match event {
                 Event::KeyboardInput(_, _, Some(VirtualKeyCode::Escape)) =>
@@ -98,21 +100,24 @@ fn main() {
             debug_renderer.draw_line(r, z, [0.0, 0.0, 1.0, 0.5]);
         }
 
-        camera.projection.aspect = canvas.get_aspect_ratio();
-        pipeline.render(&scene, &camera, &mut canvas).unwrap();
+        camera.projection.aspect = stream.get_aspect_ratio();
+        pipeline.render(&scene, &camera, &mut stream).unwrap();
 
         // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
-        //debug_renderer.render_canvas(&mut canvas, camera.get_view_projection(&scene.world));
+        //debug_renderer.render_canvas(&mut stream, camera.get_view_projection(&scene.world));
         if true {
             use cgmath::FixedArray;
             use claymore_scene::base::World;
             let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
             let temp: cgmath::Matrix4<f32> = camera.projection.clone().into();
             let proj_mx = temp.mul_m(&cam_inv.into()).into_fixed();
-            debug_renderer.render_canvas(&mut canvas, proj_mx);
+            debug_renderer.render(&mut stream, proj_mx).unwrap();
         }
 
-        canvas.present();
+        //stream.present();
+        stream.flush(&mut device);
+        stream.out.window.swap_buffers();
+        device.cleanup();
     }
     println!("Done.");
 }

@@ -10,6 +10,7 @@ extern crate gfx;
 extern crate gfx_phase;
 extern crate gfx_pipeline;
 extern crate gfx_window_glutin;
+extern crate gfx_text;
 extern crate gfx_debug_draw;
 extern crate claymore_load;
 extern crate claymore_scene;
@@ -107,10 +108,12 @@ fn main() {
         .with_vsync()
         .with_gl(glutin::GL_CORE)
         .build().unwrap();
-    let mut canvas = gfx_window_glutin::init(window).into_canvas();
+    let (mut stream, mut device, mut factory) = gfx_window_glutin::init(window);
 
-    let mut debug = gfx_debug_draw::DebugRenderer::from_canvas(
-        &mut canvas, 64, None, None).ok().unwrap();
+    let mut debug = gfx_debug_draw::DebugRenderer::new(
+        device.spawn_factory(),
+        gfx_text::new(device.spawn_factory()).unwrap(),
+        64).unwrap();
 
     println!("Reading configuration...");
     let config: reflect::Demo = {
@@ -125,7 +128,7 @@ fn main() {
     };
 
     println!("Loading asset palette...");
-    let mut scene = claymore_load::Context::new(&mut canvas.factory, root)
+    let mut scene = claymore_load::Context::new(&mut factory, root)
                                            .load_scene(&config.palette.scene)
                                            .unwrap();
     scene.world.update();
@@ -136,7 +139,7 @@ fn main() {
     }
 
     println!("Initializing the graphics...");
-    let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut canvas.factory)
+    let mut pipeline = gfx_pipeline::forward::Pipeline::new(&mut factory)
                                                        .unwrap();
     pipeline.background = Some([0.2, 0.3, 0.4, 1.0]);
 
@@ -163,7 +166,7 @@ fn main() {
         let move_delta = config.control.move_speed * seconds;
         let rotate_delta = config.control.rotate_speed * seconds;
 
-        for event in canvas.output.window.poll_events() {
+        for event in stream.out.window.poll_events() {
             // TODO: use the scroll
             use glutin::{Event, VirtualKeyCode};
             use glutin::ElementState::Pressed;
@@ -195,11 +198,11 @@ fn main() {
 
         scene.world.update();
 
-        camera.projection.aspect = canvas.get_aspect_ratio();
-        let report = pipeline.render(&scene, &camera, &mut canvas).unwrap();
+        camera.projection.aspect = stream.get_aspect_ratio();
+        let report = pipeline.render(&scene, &camera, &mut stream).unwrap();
 
         {
-            let win_size = canvas.output.get_size();
+            let win_size = stream.out.get_size();
             let color = config.debug.color;
             let offset = config.debug.offset;
             let mut offset = [
@@ -223,9 +226,12 @@ fn main() {
                 offset[1] += config.debug.line_jump;
             }
         }
-        debug.render_canvas(&mut canvas, [[0.0; 4]; 4]);
+        debug.render(&mut stream, [[0.0; 4]; 4]).unwrap();
 
-        canvas.present();
+        //stream.present();
+        stream.flush(&mut device);
+        stream.out.window.swap_buffers();
+        device.cleanup();
     }
     println!("Done.");
 }
