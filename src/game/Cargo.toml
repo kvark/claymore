@@ -1,6 +1,6 @@
 [package]
 name = "claymore-game"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
 "Dzmitry Malyshau <kvarkus@gmail.com>",
 ]
@@ -12,6 +12,10 @@ path = "lib.rs"
 [dependencies]
 log = "*"
 rustc-serialize = "*"
+cgmath = "*"
+gfx = "0.6"
+gfx_scene = "0.2"
+gfx_pipeline = "0.2"
 
 [dependencies.claymore-scene]
 path = "../scene"
@@ -21,15 +25,3 @@ path = "../load"
 
 [dependencies.grid]
 git = "https://github.com/kvark/grid-rs"
-
-[dependencies.cgmath]
-git = "https://github.com/bjz/cgmath-rs"
-
-[dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-
-[dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"
-
-[dependencies.gfx_pipeline]
-git = "https://github.com/kvark/gfx_pipeline"

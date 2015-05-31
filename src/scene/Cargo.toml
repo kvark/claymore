@@ -1,6 +1,6 @@
 [package]
 name = "claymore-scene"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
 "Dzmitry Malyshau <kvarkus@gmail.com>",
 ]
@@ -9,17 +9,13 @@ authors = [
 name = "claymore_scene"
 path = "lib.rs"
 
-[dependencies.id]
-git = "https://github.com/kvark/simplecs"
-
-[dependencies.cgmath]
-git = "https://github.com/bjz/cgmath-rs"
-
-[dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"
-
-[dependencies.gfx_pipeline]
-git = "https://github.com/kvark/gfx_pipeline"
-
 [dependencies]
 log = "*"
+cgmath = "*"
+gfx = "0.6"
+gfx_phase = "0.2"
+gfx_scene = "0.3"
+gfx_pipeline = "0.2"
+
+[dependencies.id]
+git = "https://github.com/kvark/simplecs"

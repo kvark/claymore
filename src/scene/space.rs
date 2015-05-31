@@ -2,7 +2,6 @@ use std::marker::PhantomData;
 use std::slice;
 use cgmath::{BaseFloat, Transform, Transform3};
 use id::{Array, Id, Storage};
-use gfx_scene;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Parent<T> {
@@ -104,16 +103,5 @@ impl<S: BaseFloat, T: Transform3<S> + Clone> World<S, T> {
                 b.world = base.concat(&b.local);
             })
         }
-    }
-}
-
-impl<S: BaseFloat + 'static, T: Transform3<S> + Clone> gfx_scene::World for World<S, T> {
-    type Scalar = S;
-    type Transform = T;
-    type NodePtr = Id<Node<T>>;
-    type SkeletonPtr = Id<Skeleton<T>>;
-
-    fn get_transform(&self, id: &Id<Node<T>>) -> T {
-        self.get_node(*id).world.clone()
     }
 }

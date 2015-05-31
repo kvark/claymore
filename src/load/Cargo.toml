@@ -1,6 +1,6 @@
 [package]
 name = "claymore-load"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
 "Dzmitry Malyshau <kvarkus@gmail.com>",
 ]
@@ -9,21 +9,15 @@ authors = [
 name = "claymore_load"
 path = "lib.rs"
 
-[dependencies.claymore-scene]
-path = "../scene"
-
-[dependencies.cgmath]
-git = "https://github.com/bjz/cgmath-rs"
-
-[dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-
-[dependencies.piston-gfx_texture]
-git = "https://github.com/PistonDevelopers/gfx_texture"
-
-[dependencies.gfx_scene]
-git = "https://github.com/kvark/gfx_scene"
-
 [dependencies]
 log = "*"
 rustc-serialize = "*"
+cgmath = "*"
+gfx = "0.6"
+gfx_scene = "0.2"
+
+[dependencies.piston-gfx_texture]
+gfx_texture = "0.1"
+
+[dependencies.claymore-scene]
+path = "../scene"
