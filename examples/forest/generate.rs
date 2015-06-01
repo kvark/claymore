@@ -244,12 +244,11 @@ impl<R: gfx::Resources> Gen<R> {
         debug!("\tUsing orientation {:?} and proto id {}", orientation, proto_id);
         let rotation = {
             use cgmath::Rotation;
-            use claymore_scene::base::World;
             let relative: cgmath::Quaternion<_> = cgmath::Rotation3::from_axis_angle(
                 &cgmath::Vector3::new(0.0, 0.0, -1.0),
                 cgmath::deg(orientation.to_degrees()).into(),
             );
-            relative.concat(&world.get_transform(&drawable.node).rot)
+            relative.concat(&world.get_node(drawable.node).world.rot)
         };
         let (rot_x, rot_y) = match orientation {
             Direction::North => (0, 0),
@@ -269,7 +268,7 @@ impl<R: gfx::Resources> Gen<R> {
                     0.0,
                 ),
             });
-        claymore_scene::base::Entity {
+        claymore_scene::Entity {
             name: String::new(),
             visible: true,
             mesh: drawable.mesh.clone(),
@@ -305,7 +304,7 @@ impl<R: gfx::Resources> Gen<R> {
                 rot: rotation,
                 disp: translation.sub_p(&bound_center),
             });
-        claymore_scene::base::Entity {
+        claymore_scene::Entity {
             name: String::new(),
             visible: true,
             mesh: drawable.mesh.clone(),

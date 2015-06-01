@@ -27,11 +27,11 @@ fn main() {
         .build().unwrap();
     let (mut stream, mut device, mut factory) = gfx_window_glutin::init(window);
 
-    let text_renderer = gfx_text::new(device.spawn_factory()).unwrap();
+    let text_renderer = gfx_text::new(factory.clone()).unwrap();
     let mut debug_renderer = gfx_debug_draw::DebugRenderer::new(
-        device.spawn_factory(), text_renderer, 64).unwrap();
+        factory.clone(), text_renderer, 64).unwrap();
 
-    let mut scene = claymore_load::create_scene();
+    let mut scene = claymore_scene::Scene::new();
     {
         let mut context = claymore_load::Context::new(&mut factory,
             env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string()));
@@ -57,10 +57,9 @@ fn main() {
         }
     };
     let mut control = {
-        use claymore_scene::base::World;
         let target_node = scene.entities[0].node;
         control::Control::new(0.005, 0.01, 0.5,
-            scene.world.get_transform(&target_node))
+            scene.world.get_node(target_node).world.clone())
     };
 
     println!("Rendering...");
@@ -103,21 +102,17 @@ fn main() {
         camera.projection.aspect = stream.get_aspect_ratio();
         pipeline.render(&scene, &camera, &mut stream).unwrap();
 
-        // this causes an ICE: https://github.com/rust-lang/rust/issues/24152
-        //debug_renderer.render_canvas(&mut stream, camera.get_view_projection(&scene.world));
-        if true {
+        {
             use cgmath::FixedArray;
-            use claymore_scene::base::World;
-            let cam_inv = scene.world.get_transform(&camera.node).invert().unwrap();
+            //use claymore_scene::base::Camera;
+            //let proj_mx = camera.get_view_projection(&scene.world).into_fixed(); //TODO
+            let cam_inv = scene.world.get_node(camera.node).world.invert().unwrap();
             let temp: cgmath::Matrix4<f32> = camera.projection.clone().into();
             let proj_mx = temp.mul_m(&cam_inv.into()).into_fixed();
             debug_renderer.render(&mut stream, proj_mx).unwrap();
         }
 
-        //stream.present();
-        stream.flush(&mut device);
-        stream.out.window.swap_buffers();
-        device.cleanup();
+        stream.present(&mut device);
     }
     println!("Done.");
 }

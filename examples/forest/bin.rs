@@ -111,8 +111,8 @@ fn main() {
     let (mut stream, mut device, mut factory) = gfx_window_glutin::init(window);
 
     let mut debug = gfx_debug_draw::DebugRenderer::new(
-        device.spawn_factory(),
-        gfx_text::new(device.spawn_factory()).unwrap(),
+        factory.clone(),
+        gfx_text::new(factory.clone()).unwrap(),
         64).unwrap();
 
     println!("Reading configuration...");
@@ -228,10 +228,7 @@ fn main() {
         }
         debug.render(&mut stream, [[0.0; 4]; 4]).unwrap();
 
-        //stream.present();
-        stream.flush(&mut device);
-        stream.out.window.swap_buffers();
-        device.cleanup();
+        stream.present(&mut device);
     }
     println!("Done.");
 }
