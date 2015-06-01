@@ -14,7 +14,6 @@ log = "*"
 rustc-serialize = "*"
 cgmath = "*"
 gfx = "0.6"
-gfx_scene = "0.2"
 
 [dependencies.piston-gfx_texture]
 gfx_texture = "0.1"

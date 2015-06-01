@@ -50,7 +50,7 @@ pub use grid::quad::{Coordinate, Direction};
 pub struct Field<R: gfx::Resources> {
     pub node: scene::NodeId<f32>,
     pub grid: grid::quad::Grid,
-    batch: gfx::batch::OwnedBatch<Param<R>>,
+    batch: gfx::batch::Full<Param<R>>,
 }
 
 impl<R: gfx::Resources> Field<R> {
@@ -68,7 +68,7 @@ impl<R: gfx::Resources> Field<R> {
         });
         let mesh = factory.create_mesh(&vertices);
         let program = factory.link_program(VERTEX_SRC, FRAGMENT_SRC).unwrap();
-        let mut batch = gfx::batch::OwnedBatch::new(mesh, program, Param {
+        let mut batch = gfx::batch::Full::new(mesh, program, Param {
             mvp: [[0.0; 4]; 4],
             color: [color.0, color.1, color.2, color.3],
             _r: PhantomData,
@@ -100,11 +100,10 @@ impl<R: gfx::Resources> Field<R> {
 
     pub fn update_params(&mut self, camera: &scene::Camera<f32>, world: &scene::World<f32>) {
         use cgmath::{Matrix, Transform};
-        use scene::base::World;
         let mx_proj: cgmath::Matrix4<f32> = camera.projection.clone().into();
-        let model_view = world.get_transform(&camera.node).invert().unwrap()
-                              .concat(&world.get_transform(&self.node));
-        self.batch.param.mvp = mx_proj.mul_m(&model_view.into()).into_fixed();
+        let model_view = world.get_node(camera.node).world.invert().unwrap()
+                              .concat(&world.get_node(self.node).world);
+        self.batch.params.mvp = mx_proj.mul_m(&model_view.into()).into_fixed();
     }
 
     pub fn draw<S: gfx::Stream<R>>(&self, stream: &mut S) {

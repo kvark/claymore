@@ -14,7 +14,7 @@ log = "*"
 rustc-serialize = "*"
 cgmath = "*"
 gfx = "0.6"
-gfx_scene = "0.2"
+gfx_scene = "0.3"
 gfx_pipeline = "0.2"
 
 [dependencies.claymore-scene]

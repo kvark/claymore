@@ -77,6 +77,14 @@ impl<R: gfx::Resources, S: cgmath::BaseNum> Entity<R, S> {
             fragments: Vec::new(),
         }
     }
+
+    /// Add another fragment to the list
+    pub fn add_fragment(&mut self, mat: Material<R>, slice: gfx::Slice<R>) {
+        self.fragments.push(gfx_scene::Fragment {
+            material: mat,
+            slice: slice,
+        });
+    }
 }
 
 impl<'a,
@@ -103,7 +111,22 @@ impl<'a,
 /// An example scene type.
 pub struct Scene<R: gfx::Resources, S: cgmath::BaseNum> {
     pub entities: Vec<Entity<R, S>>,
+    pub cameras: Vec<Camera<S>>,
     pub world: World<S>,
+}
+
+impl<
+    R: gfx::Resources,
+    S: cgmath::BaseFloat,
+> Scene<R, S> {
+    /// Create a new empty scene
+    pub fn new() -> Scene<R, S> {
+        Scene {
+            entities: Vec::new(),
+            cameras: Vec::new(),
+            world: space::World::new(),
+        }
+    }
 }
 
 impl<
@@ -121,8 +144,10 @@ impl<
         X: gfx::Stream<R>,
     {
         let mut culler = gfx_scene::Frustum::new();
+        let entities: Vec<_> = self.entities.iter() //TODO: avoid allocation
+                                            .map(|e| Pair(e, &self.world))
+                                            .collect();
         gfx_scene::Context::new(&mut culler, &Pair(camera, &self.world))
-                           .draw(self.entities.iter().map(|e| &Pair(e, &self.world)),
-                                 phase, stream)
+                           .draw(entities.iter(), phase, stream)
     }
 }

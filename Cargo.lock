@@ -54,7 +54,7 @@ dependencies = [
  "claymore-scene 0.1.1",
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_pipeline 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_scene 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_scene 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid 0.0.1 (git+https://github.com/kvark/grid-rs)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -67,7 +67,6 @@ dependencies = [
  "cgmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "claymore-scene 0.1.1",
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_scene 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-gfx_texture 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -222,16 +221,6 @@ dependencies = [
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_phase 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_scene 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "gfx_scene"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "cgmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_phase 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

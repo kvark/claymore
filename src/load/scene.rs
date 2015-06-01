@@ -1,6 +1,5 @@
 use cgmath;
 use gfx;
-use gfx_scene;
 use claymore_scene as cs;
 use super::reflect as json;
 
@@ -66,7 +65,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             near: near,
             far: far,
         };
-        gfx_scene::Camera {
+        cs::Camera {
             name: cam.name.clone(),
             node: node,
             projection: proj,
@@ -86,7 +85,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
             Err(e) => return Err(Error::Mesh(ent.mesh.clone(), e)),
         };
         let (vmin, vmax) = ent.bounds;
-        let mut entity = gfx_scene::Entity {
+        let mut entity = cs::Entity {
             name: ent.node.clone(),
             visible: true,
             mesh: mesh,
@@ -112,10 +111,7 @@ pub fn load_into<'a, R: 'a + gfx::Resources, F: 'a + gfx::Factory<R>>(
                         frag.material, super::mat::Error::NotFound)),
                 },
             };
-            entity.fragments.push(gfx_scene::Fragment {
-                material: material,
-                slice: slice.clone(),
-            });
+            entity.add_fragment(material, slice.clone());
         }
         this.entities.push(entity);
     }

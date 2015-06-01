@@ -49,7 +49,7 @@ impl<R: gfx::Resources> App<R> {
         use std::env;
         use std::io::Read;
         let root = env::var("CARGO_MANIFEST_DIR").unwrap_or(".".to_string());
-        let mut scene = load::create_scene();
+        let mut scene = scene::Scene::new();
         // load the config
         let config: reflect::Game = {
             let mut file = File::open(&format!("{}/config/game.json", root)).unwrap();
@@ -121,7 +121,6 @@ impl<R: gfx::Resources> App<R> {
 
     fn mouse_cast(&self, x: f32, y: f32) -> field::Coordinate {
         use cgmath::{EuclideanVector, Matrix, Point, Transform};
-        use scene::base::World;
         let end_proj = cgmath::Point3::new(x*2.0 - 1.0, 1.0 - y*2.0, 0.0);
         let mx_proj: cgmath::Matrix4<f32> = self.camera.projection.clone().into();
         let inv_proj = mx_proj.invert().unwrap();
@@ -130,9 +129,9 @@ impl<R: gfx::Resources> App<R> {
         );
         let ray = cgmath::Ray3::new(cgmath::Point3::new(0.0, 0.0, 0.0),
                                     end_cam.to_vec().normalize());
-        let transform = self.scene.world.get_transform(&self.field.node)
+        let transform = self.scene.world.get_node(self.field.node).world
                             .invert().unwrap()
-                            .concat(&self.scene.world.get_transform(&self.camera.node));
+                            .concat(&self.scene.world.get_node(self.camera.node).world);
         let ray_grid = transform.transform_ray(&ray);
         self.field.cast_ray(&ray_grid)
     }
