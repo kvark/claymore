@@ -3,7 +3,6 @@ extern crate log;
 extern crate id;
 extern crate cgmath;
 extern crate gfx;
-extern crate gfx_phase;
 extern crate gfx_scene;
 extern crate gfx_pipeline;
 
@@ -140,7 +139,7 @@ impl<
 
     fn draw<H, X>(&self, phase: &mut H, camera: &Camera<S>,
             stream: &mut X) -> Result<gfx_scene::Report, gfx_scene::Error> where
-        H: gfx_phase::AbstractPhase<R, Material<R>, ViewInfo<S>>,
+        H: gfx_scene::AbstractPhase<R, Material<R>, ViewInfo<S>>,
         X: gfx::Stream<R>,
     {
         let mut culler = gfx_scene::Frustum::new();

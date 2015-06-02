@@ -5,7 +5,6 @@ extern crate grid;
 extern crate cgmath;
 #[macro_use]
 extern crate gfx;
-extern crate gfx_scene;
 extern crate gfx_pipeline;
 extern crate claymore_scene as scene;
 extern crate claymore_load as load;

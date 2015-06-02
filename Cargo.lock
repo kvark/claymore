@@ -31,6 +31,11 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "bitflags"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "byteorder"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -54,7 +59,6 @@ dependencies = [
  "claymore-scene 0.1.1",
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_pipeline 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_scene 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "grid 0.0.1 (git+https://github.com/kvark/grid-rs)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -78,9 +82,8 @@ version = "0.1.1"
 dependencies = [
  "cgmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_phase 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_pipeline 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_scene 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_scene 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "id 0.0.1 (git+https://github.com/kvark/simplecs)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -100,10 +103,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "draw_state"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "bitflags 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -164,8 +167,8 @@ name = "gfx"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "bitflags 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "draw_state 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "draw_state 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -220,12 +223,12 @@ dependencies = [
  "cgmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_phase 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx_scene 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_scene 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "gfx_scene"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cgmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -561,6 +564,6 @@ name = "xml-rs"
 version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "bitflags 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
